@@ -11,11 +11,14 @@ import AVFoundation
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
     @State private var hoveredThumbnailIndex: Int? = nil
+    @State private var dragSensitivity: Double = 0.5 // 0.1 = very slow, 1.0 = normal speed
+    @State private var isDraggingPlayhead = false
+    @State private var lastDragTranslation: CGFloat = 0
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 8) {
-                // Timeline header
+                // Timeline header with sensitivity control
                 HStack {
                     Text("Timeline")
                         .font(.headline)
@@ -23,6 +26,24 @@ struct TimelineView: View {
                     Spacer()
 
                     if viewModel.hasVideo {
+                        // Sensitivity control
+                        HStack(spacing: 8) {
+                            Image(systemName: "gauge.with.dots.needle.33percent")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Slider(value: $dragSensitivity, in: 0.1...1.0, step: 0.1)
+                                .frame(width: 100)
+
+                            Text("\(Int(dragSensitivity * 100))%")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .frame(width: 35)
+
+                            Divider()
+                                .frame(height: 16)
+                        }
+
                         Text("Duration: \(viewModel.videoDuration)")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -92,15 +113,23 @@ struct TimelineView: View {
                                     }
                             )
 
-                            // Playhead scrubber
-                            PlayheadView()
+                            // Playhead scrubber with adjustable sensitivity
+                            PlayheadView(isDragging: isDraggingPlayhead)
                                 .position(x: playheadX, y: 40)
                                 .gesture(
                                     DragGesture(minimumDistance: 0)
                                         .onChanged { value in
-                                            let dragX = playheadX + value.translation.width
+                                            isDraggingPlayhead = true
+
+                                            // Apply sensitivity to drag movement
+                                            let adjustedTranslation = value.translation.width * dragSensitivity
+                                            let dragX = playheadX + adjustedTranslation
                                             let newPosition = max(0, min(dragX / totalWidth, 1.0))
                                             viewModel.updatePlayhead(newPosition)
+                                        }
+                                        .onEnded { _ in
+                                            isDraggingPlayhead = false
+                                            lastDragTranslation = 0
                                         }
                                 )
                                 .onTapGesture { }
@@ -292,28 +321,33 @@ struct ThumbnailStripView: View {
 
 // MARK: - Playhead View
 struct PlayheadView: View {
+    var isDragging: Bool = false
+
     var body: some View {
         ZStack {
-            // Vertical line
+            // Vertical line - thicker when dragging
             Rectangle()
                 .fill(Color.orange)
-                .frame(width: 3, height: 80)
+                .frame(width: isDragging ? 4 : 3, height: 80)
+                .animation(.easeInOut(duration: 0.2), value: isDragging)
 
-            // Top triangle
+            // Top triangle - larger when dragging
             Triangle()
                 .fill(Color.orange)
-                .frame(width: 16, height: 12)
+                .frame(width: isDragging ? 20 : 16, height: isDragging ? 14 : 12)
                 .offset(y: -46)
+                .animation(.easeInOut(duration: 0.2), value: isDragging)
 
-            // Circular handle in the middle
+            // Circular handle in the middle - larger when dragging
             Circle()
                 .fill(Color.orange)
-                .frame(width: 16, height: 16)
+                .frame(width: isDragging ? 20 : 16, height: isDragging ? 20 : 16)
                 .overlay(
                     Circle()
-                        .stroke(Color.white, lineWidth: 2)
+                        .stroke(Color.white, lineWidth: isDragging ? 3 : 2)
                 )
-                .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
+                .shadow(color: .black.opacity(isDragging ? 0.5 : 0.3), radius: isDragging ? 5 : 3, x: 0, y: 2)
+                .animation(.easeInOut(duration: 0.2), value: isDragging)
         }
     }
 }
