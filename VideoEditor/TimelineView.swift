@@ -10,9 +10,6 @@ import AVFoundation
 
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
-    @State private var isDraggingStart = false
-    @State private var isDraggingEnd = false
-    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 8) {
@@ -34,82 +31,93 @@ struct TimelineView: View {
             if viewModel.hasVideo {
                 // Timeline scrubber
                 GeometryReader { geometry in
+                    let totalWidth = geometry.size.width
+                    let startX = viewModel.trimStartPosition * totalWidth
+                    let endX = viewModel.trimEndPosition * totalWidth
+
                     ZStack(alignment: .leading) {
                         // Background track
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.gray.opacity(0.3))
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.gray.opacity(0.2))
                             .frame(height: 60)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
 
-                        // Video thumbnail strip (placeholder)
-                        RoundedRectangle(cornerRadius: 4)
+                        // Video thumbnail strip (gradient placeholder)
+                        RoundedRectangle(cornerRadius: 6)
                             .fill(LinearGradient(
-                                gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                                gradient: Gradient(colors: [
+                                    Color.blue.opacity(0.4),
+                                    Color.purple.opacity(0.4),
+                                    Color.pink.opacity(0.4)
+                                ]),
                                 startPoint: .leading,
                                 endPoint: .trailing
                             ))
                             .frame(height: 60)
 
-                        // Trim handles
-                        HStack(spacing: 0) {
-                            // Start trim handle
-                            TrimHandle(isStart: true)
-                                .frame(width: 20)
-                                .offset(x: viewModel.trimStartPosition * geometry.size.width)
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { value in
-                                            let newPosition = max(0, min((viewModel.trimStartPosition * geometry.size.width + value.translation.width) / geometry.size.width, viewModel.trimEndPosition - 0.05))
-                                            viewModel.updateTrimStart(newPosition)
-                                        }
-                                )
-
-                            Spacer()
-
-                            // End trim handle
-                            TrimHandle(isStart: false)
-                                .frame(width: 20)
-                                .offset(x: viewModel.trimEndPosition * geometry.size.width - 20)
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { value in
-                                            let newPosition = max(viewModel.trimStartPosition + 0.05, min((viewModel.trimEndPosition * geometry.size.width + value.translation.width) / geometry.size.width, 1.0))
-                                            viewModel.updateTrimEnd(newPosition)
-                                        }
-                                )
-                        }
-
                         // Selected region overlay
                         Rectangle()
-                            .fill(Color.blue.opacity(0.2))
-                            .frame(
-                                width: (viewModel.trimEndPosition - viewModel.trimStartPosition) * geometry.size.width,
-                                height: 60
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(width: max(0, endX - startX), height: 60)
+                            .offset(x: startX)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.blue, lineWidth: 2)
+                                    .frame(width: max(0, endX - startX), height: 60)
                             )
-                            .offset(x: viewModel.trimStartPosition * geometry.size.width)
-                            .border(Color.blue, width: 2)
-                            .cornerRadius(4)
+
+                        // Start trim handle
+                        TrimHandle(isStart: true)
+                            .position(x: startX, y: 30)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let dragX = startX + value.translation.width
+                                        let newPosition = max(0, min(dragX / totalWidth, viewModel.trimEndPosition - 0.05))
+                                        viewModel.updateTrimStart(newPosition)
+                                    }
+                            )
+
+                        // End trim handle
+                        TrimHandle(isStart: false)
+                            .position(x: endX, y: 30)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let dragX = endX + value.translation.width
+                                        let newPosition = max(viewModel.trimStartPosition + 0.05, min(dragX / totalWidth, 1.0))
+                                        viewModel.updateTrimEnd(newPosition)
+                                    }
+                            )
 
                         // Time markers
                         VStack {
                             Spacer()
-                            HStack {
+                            HStack(spacing: 0) {
                                 Text(viewModel.trimStartTimeString)
                                     .font(.caption2)
+                                    .monospacedDigit()
                                     .foregroundColor(.white)
-                                    .padding(4)
-                                    .background(Color.black.opacity(0.7))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.black.opacity(0.75))
                                     .cornerRadius(4)
-                                    .offset(x: viewModel.trimStartPosition * geometry.size.width)
+                                    .position(x: max(30, min(startX, totalWidth - 60)), y: 8)
 
                                 Spacer()
 
                                 Text(viewModel.trimEndTimeString)
                                     .font(.caption2)
+                                    .monospacedDigit()
                                     .foregroundColor(.white)
-                                    .padding(4)
-                                    .background(Color.black.opacity(0.7))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.black.opacity(0.75))
                                     .cornerRadius(4)
-                                    .offset(x: viewModel.trimEndPosition * geometry.size.width - geometry.size.width)
+                                    .position(x: max(60, min(endX, totalWidth - 30)), y: 8)
                             }
                         }
                     }
@@ -204,25 +212,27 @@ struct TrimHandle: View {
     let isStart: Bool
 
     var body: some View {
-        VStack(spacing: 2) {
-            RoundedRectangle(cornerRadius: 2)
+        ZStack {
+            // Handle bar
+            RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white)
-                .frame(width: 4, height: 20)
+                .frame(width: 12, height: 60)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(Color.blue, lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
 
-            Rectangle()
-                .fill(Color.white.opacity(0.8))
-                .frame(width: 20, height: 60)
-
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.white)
-                .frame(width: 4, height: 20)
+            // Chevron indicator
+            VStack(spacing: 2) {
+                Image(systemName: isStart ? "chevron.right" : "chevron.left")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.blue)
+                Image(systemName: isStart ? "chevron.right" : "chevron.left")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.blue)
+            }
         }
-        .overlay(
-            Image(systemName: isStart ? "chevron.right" : "chevron.left")
-                .font(.caption2)
-                .foregroundColor(.blue)
-        )
-        .shadow(radius: 2)
     }
 }
 
