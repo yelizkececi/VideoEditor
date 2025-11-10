@@ -21,16 +21,25 @@ class VideoEditorViewModel: ObservableObject {
     @Published var videoFileName = ""
     @Published var videoDuration = ""
 
-    // Timeline properties
-    @Published var trimStartPosition: Double = 0.0  // 0.0 to 1.0
-    @Published var trimEndPosition: Double = 1.0    // 0.0 to 1.0
+    // Timeline properties - Playhead-relative trimming
+    @Published var playheadPosition: Double = 0.5   // 0.0 to 1.0 - current playhead position (center)
+    @Published var trimStartOffset: Double = -0.25  // Offset from playhead (-0.5 to 0)
+    @Published var trimEndOffset: Double = 0.25     // Offset from playhead (0 to 0.5)
     @Published var segments: [VideoSegment] = []
-    @Published var playheadPosition: Double = 0.0   // 0.0 to 1.0 - current playhead position
     @Published var thumbnailGenerator = ThumbnailGenerator()
 
     private var currentVideoURL: URL?
     private var currentAsset: AVAsset?
     private var videoDurationSeconds: Double = 0.0
+
+    // Computed absolute positions
+    var trimStartPosition: Double {
+        max(0, min(playheadPosition + trimStartOffset, 1.0))
+    }
+
+    var trimEndPosition: Double {
+        max(0, min(playheadPosition + trimEndOffset, 1.0))
+    }
 
     var trimStartTimeString: String {
         formatTime(trimStartPosition * videoDurationSeconds)
@@ -90,10 +99,10 @@ class VideoEditorViewModel: ObservableObject {
         hasVideo = true
         errorMessage = nil
 
-        // Reset timeline
-        trimStartPosition = 0.0
-        trimEndPosition = 1.0
-        playheadPosition = 0.0
+        // Reset timeline - playhead at center with selection around it
+        playheadPosition = 0.5
+        trimStartOffset = -0.25
+        trimEndOffset = 0.25
         segments.removeAll()
 
         // Generate thumbnails
@@ -741,12 +750,16 @@ class VideoEditorViewModel: ObservableObject {
 
     // MARK: - Timeline Management
 
-    func updateTrimStart(_ position: Double) {
-        trimStartPosition = position
+    func updateTrimStartOffset(_ absolutePosition: Double) {
+        // Convert absolute position to offset from playhead
+        let offset = absolutePosition - playheadPosition
+        trimStartOffset = max(-playheadPosition, min(offset, 0))  // Can't go before 0, must be <= playhead
     }
 
-    func updateTrimEnd(_ position: Double) {
-        trimEndPosition = position
+    func updateTrimEndOffset(_ absolutePosition: Double) {
+        // Convert absolute position to offset from playhead
+        let offset = absolutePosition - playheadPosition
+        trimEndOffset = max(0, min(offset, 1.0 - playheadPosition))  // Must be >= playhead, can't go past 1.0
     }
 
     func updatePlayhead(_ position: Double, snapToThumbnails: Bool = false) {
@@ -771,8 +784,9 @@ class VideoEditorViewModel: ObservableObject {
     }
 
     func resetTrim() {
-        trimStartPosition = 0.0
-        trimEndPosition = 1.0
+        // Reset offsets to default relative to playhead
+        trimStartOffset = -0.25
+        trimEndOffset = 0.25
     }
 
     /// Split video at current playhead position

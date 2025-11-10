@@ -55,12 +55,13 @@ struct TimelineView: View {
                 .padding(.horizontal)
 
                 if viewModel.hasVideo {
-                    // Timeline with thumbnails
+                    // Timeline with thumbnails - playhead-relative selection
                     GeometryReader { geometry in
                         let totalWidth = geometry.size.width
+                        // Playhead-relative: start and end move with playhead
+                        let playheadX = viewModel.playheadPosition * totalWidth
                         let startX = viewModel.trimStartPosition * totalWidth
                         let endX = viewModel.trimEndPosition * totalWidth
-                        let playheadX = viewModel.playheadPosition * totalWidth
 
                         ZStack(alignment: .leading) {
                             // Background track
@@ -92,29 +93,27 @@ struct TimelineView: View {
                                     .frame(width: max(0, endX - startX), height: 80)
                             )
 
-                        // Start trim handle - follows mouse X directly
+                        // Start trim handle - follows mouse X, updates offset from playhead
                         TrimHandle(isStart: true)
                             .position(x: startX, y: 40)
                             .gesture(
                                 DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
                                     .onChanged { value in
-                                        // Use absolute mouse location instead of translation
                                         let mouseX = value.location.x
-                                        let newPosition = max(0, min(mouseX / totalWidth, viewModel.trimEndPosition - 0.05))
-                                        viewModel.updateTrimStart(newPosition)
+                                        let absolutePosition = mouseX / totalWidth
+                                        viewModel.updateTrimStartOffset(absolutePosition)
                                     }
                             )
 
-                        // End trim handle - follows mouse X directly
+                        // End trim handle - follows mouse X, updates offset from playhead
                         TrimHandle(isStart: false)
                             .position(x: endX, y: 40)
                             .gesture(
                                 DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
                                     .onChanged { value in
-                                        // Use absolute mouse location instead of translation
                                         let mouseX = value.location.x
-                                        let newPosition = max(viewModel.trimStartPosition + 0.05, min(mouseX / totalWidth, 1.0))
-                                        viewModel.updateTrimEnd(newPosition)
+                                        let absolutePosition = mouseX / totalWidth
+                                        viewModel.updateTrimEndOffset(absolutePosition)
                                     }
                             )
 
@@ -304,8 +303,8 @@ struct TimelineView: View {
         let durationSeconds = parseDurationToSeconds(duration)
 
         if startSeconds >= 0 && endSeconds <= durationSeconds && startSeconds < endSeconds {
-            viewModel.updateTrimStart(startSeconds / durationSeconds)
-            viewModel.updateTrimEnd(endSeconds / durationSeconds)
+            viewModel.updateTrimStartOffset(startSeconds / durationSeconds)
+            viewModel.updateTrimEndOffset(endSeconds / durationSeconds)
         }
     }
 
