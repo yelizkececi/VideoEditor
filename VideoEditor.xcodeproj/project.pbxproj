@@ -13,6 +13,7 @@
 		AA0000070000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000080000000000000001 /* Assets.xcassets */; };
 		AA1111110000000000000001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1111120000000000000001 /* TimelineView.swift */; };
 		AA2222210000000000000001 /* VideoSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2222220000000000000001 /* VideoSegment.swift */; };
+		AA3333310000000000000001 /* ThumbnailGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3333320000000000000001 /* ThumbnailGenerator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		AA0000110000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA1111120000000000000001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		AA2222220000000000000001 /* VideoSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSegment.swift; sourceTree = "<group>"; };
+		AA3333320000000000000001 /* ThumbnailGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailGenerator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +56,7 @@
 				AA1111120000000000000001 /* TimelineView.swift */,
 				AA0000060000000000000001 /* VideoEditorViewModel.swift */,
 				AA2222220000000000000001 /* VideoSegment.swift */,
+				AA3333320000000000000001 /* ThumbnailGenerator.swift */,
 				AA0000080000000000000001 /* Assets.xcassets */,
 				AA0000100000000000000001 /* VideoEditor.entitlements */,
 				AA0000110000000000000001 /* Info.plist */,
@@ -143,6 +146,7 @@
 				AA1111110000000000000001 /* TimelineView.swift in Sources */,
 				AA0000050000000000000001 /* VideoEditorViewModel.swift in Sources */,
 				AA2222210000000000000001 /* VideoSegment.swift in Sources */,
+				AA3333310000000000000001 /* ThumbnailGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

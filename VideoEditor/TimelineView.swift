@@ -29,49 +29,42 @@ struct TimelineView: View {
             .padding(.horizontal)
 
             if viewModel.hasVideo {
-                // Timeline scrubber
+                // Timeline with thumbnails
                 GeometryReader { geometry in
                     let totalWidth = geometry.size.width
                     let startX = viewModel.trimStartPosition * totalWidth
                     let endX = viewModel.trimEndPosition * totalWidth
+                    let playheadX = viewModel.playheadPosition * totalWidth
 
                     ZStack(alignment: .leading) {
                         // Background track
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.gray.opacity(0.2))
-                            .frame(height: 60)
+                            .frame(height: 80)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
                                     .stroke(Color.gray.opacity(0.4), lineWidth: 1)
                             )
 
-                        // Video thumbnail strip (gradient placeholder)
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.blue.opacity(0.4),
-                                    Color.purple.opacity(0.4),
-                                    Color.pink.opacity(0.4)
-                                ]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ))
-                            .frame(height: 60)
+                        // Thumbnail strip
+                        ThumbnailStripView(thumbnails: viewModel.thumbnailGenerator.thumbnails, width: totalWidth)
+                            .frame(height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
 
                         // Selected region overlay
                         Rectangle()
                             .fill(Color.blue.opacity(0.15))
-                            .frame(width: max(0, endX - startX), height: 60)
+                            .frame(width: max(0, endX - startX), height: 80)
                             .offset(x: startX)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.blue, lineWidth: 2)
-                                    .frame(width: max(0, endX - startX), height: 60)
+                                    .frame(width: max(0, endX - startX), height: 80)
                             )
 
                         // Start trim handle
                         TrimHandle(isStart: true)
-                            .position(x: startX, y: 30)
+                            .position(x: startX, y: 40)
                             .gesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { value in
@@ -83,7 +76,7 @@ struct TimelineView: View {
 
                         // End trim handle
                         TrimHandle(isStart: false)
-                            .position(x: endX, y: 30)
+                            .position(x: endX, y: 40)
                             .gesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { value in
@@ -93,56 +86,82 @@ struct TimelineView: View {
                                     }
                             )
 
-                        // Time markers
-                        VStack {
-                            Spacer()
-                            HStack(spacing: 0) {
-                                Text(viewModel.trimStartTimeString)
-                                    .font(.caption2)
-                                    .monospacedDigit()
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Color.black.opacity(0.75))
-                                    .cornerRadius(4)
-                                    .position(x: max(30, min(startX, totalWidth - 60)), y: 8)
-
-                                Spacer()
-
-                                Text(viewModel.trimEndTimeString)
-                                    .font(.caption2)
-                                    .monospacedDigit()
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Color.black.opacity(0.75))
-                                    .cornerRadius(4)
-                                    .position(x: max(60, min(endX, totalWidth - 30)), y: 8)
-                            }
-                        }
+                        // Playhead scrubber
+                        PlayheadView()
+                            .position(x: playheadX, y: 40)
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let dragX = playheadX + value.translation.width
+                                        let newPosition = max(0, min(dragX / totalWidth, 1.0))
+                                        viewModel.updatePlayhead(newPosition)
+                                    }
+                            )
+                            .onTapGesture { }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { location in
+                        // Click to move playhead
+                        let newPosition = location.x / totalWidth
+                        viewModel.updatePlayhead(max(0, min(newPosition, 1.0)))
                     }
                 }
-                .frame(height: 80)
+                .frame(height: 100)
                 .padding(.horizontal)
 
-                // Trim info and controls
-                HStack(spacing: 15) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Selection")
-                            .font(.caption)
+                // Time indicators
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Start")
+                            .font(.caption2)
                             .foregroundColor(.secondary)
-                        Text("\(viewModel.trimStartTimeString) - \(viewModel.trimEndTimeString)")
-                            .font(.system(.body, design: .monospaced))
+                        Text(viewModel.trimStartTimeString)
+                            .font(.caption)
+                            .monospacedDigit()
                     }
 
                     Spacer()
 
-                    Button("Reset") {
+                    VStack(spacing: 2) {
+                        Text("Playhead")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                        Text(viewModel.playheadTimeString)
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundColor(.orange)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("End")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(viewModel.trimEndTimeString)
+                            .font(.caption)
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.horizontal)
+
+                // Controls
+                HStack(spacing: 12) {
+                    Button("Reset Selection") {
                         viewModel.resetTrim()
                     }
                     .buttonStyle(.bordered)
 
-                    Button("Add to Segments") {
+                    Button {
+                        viewModel.splitAtPlayhead()
+                    } label: {
+                        Label("Split at Playhead", systemImage: "scissors")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.orange)
+                    .disabled(viewModel.playheadPosition <= viewModel.trimStartPosition || viewModel.playheadPosition >= viewModel.trimEndPosition)
+
+                    Button("Add Selection") {
                         viewModel.addSegment()
                     }
                     .buttonStyle(.borderedProminent)
@@ -208,6 +227,77 @@ struct TimelineView: View {
     }
 }
 
+// MARK: - Thumbnail Strip View
+struct ThumbnailStripView: View {
+    let thumbnails: [ThumbnailGenerator.VideoThumbnail]
+    let width: CGFloat
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if thumbnails.isEmpty {
+                // Placeholder gradient while thumbnails load
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.blue.opacity(0.3),
+                        Color.purple.opacity(0.3),
+                        Color.pink.opacity(0.3)
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            } else {
+                ForEach(thumbnails) { thumbnail in
+                    thumbnail.image.asImage
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: width / CGFloat(thumbnails.count), height: 80)
+                        .clipped()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Playhead View
+struct PlayheadView: View {
+    var body: some View {
+        ZStack {
+            // Vertical line
+            Rectangle()
+                .fill(Color.orange)
+                .frame(width: 3, height: 80)
+
+            // Top triangle
+            Triangle()
+                .fill(Color.orange)
+                .frame(width: 16, height: 12)
+                .offset(y: -46)
+
+            // Circular handle in the middle
+            Circle()
+                .fill(Color.orange)
+                .frame(width: 16, height: 16)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: 2)
+                )
+                .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Trim Handle
 struct TrimHandle: View {
     let isStart: Bool
 
@@ -216,7 +306,7 @@ struct TrimHandle: View {
             // Handle bar
             RoundedRectangle(cornerRadius: 3)
                 .fill(Color.white)
-                .frame(width: 12, height: 60)
+                .frame(width: 12, height: 80)
                 .overlay(
                     RoundedRectangle(cornerRadius: 3)
                         .stroke(Color.blue, lineWidth: 2)
@@ -236,6 +326,7 @@ struct TrimHandle: View {
     }
 }
 
+// MARK: - Segment Row
 struct SegmentRow: View {
     let index: Int
     let segment: VideoSegment
@@ -311,5 +402,5 @@ struct SegmentRow: View {
 
 #Preview {
     TimelineView(viewModel: VideoEditorViewModel())
-        .frame(height: 300)
+        .frame(height: 400)
 }

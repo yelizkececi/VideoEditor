@@ -25,6 +25,8 @@ class VideoEditorViewModel: ObservableObject {
     @Published var trimStartPosition: Double = 0.0  // 0.0 to 1.0
     @Published var trimEndPosition: Double = 1.0    // 0.0 to 1.0
     @Published var segments: [VideoSegment] = []
+    @Published var playheadPosition: Double = 0.0   // 0.0 to 1.0 - current playhead position
+    @Published var thumbnailGenerator = ThumbnailGenerator()
 
     private var currentVideoURL: URL?
     private var currentAsset: AVAsset?
@@ -36,6 +38,10 @@ class VideoEditorViewModel: ObservableObject {
 
     var trimEndTimeString: String {
         formatTime(trimEndPosition * videoDurationSeconds)
+    }
+
+    var playheadTimeString: String {
+        formatTime(playheadPosition * videoDurationSeconds)
     }
 
     // MARK: - Import Video
@@ -87,7 +93,17 @@ class VideoEditorViewModel: ObservableObject {
         // Reset timeline
         trimStartPosition = 0.0
         trimEndPosition = 1.0
+        playheadPosition = 0.0
         segments.removeAll()
+
+        // Generate thumbnails
+        Task {
+            do {
+                try await thumbnailGenerator.generateThumbnails(for: asset, count: 15)
+            } catch {
+                print("❌ Failed to generate thumbnails: \(error)")
+            }
+        }
 
         // Auto-play
         newPlayer.play()
@@ -694,9 +710,49 @@ class VideoEditorViewModel: ObservableObject {
         trimEndPosition = position
     }
 
+    func updatePlayhead(_ position: Double) {
+        playheadPosition = position
+
+        // Sync video player with playhead
+        if let player = player, let duration = player.currentItem?.duration {
+            let timeInSeconds = position * CMTimeGetSeconds(duration)
+            let targetTime = CMTime(seconds: timeInSeconds, preferredTimescale: 600)
+            player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+    }
+
     func resetTrim() {
         trimStartPosition = 0.0
         trimEndPosition = 1.0
+    }
+
+    /// Split video at current playhead position
+    func splitAtPlayhead() {
+        guard playheadPosition > 0.0 && playheadPosition < 1.0 else {
+            errorMessage = "Playhead must be between start and end"
+            return
+        }
+
+        // Create two segments: before and after playhead
+        let startTime = trimStartPosition * videoDurationSeconds
+        let playheadTime = playheadPosition * videoDurationSeconds
+        let endTime = trimEndPosition * videoDurationSeconds
+
+        // Only split if playhead is within the current selection
+        if playheadPosition > trimStartPosition && playheadPosition < trimEndPosition {
+            // Segment before playhead
+            let segment1 = VideoSegment(startTime: startTime, endTime: playheadTime)
+            segments.append(segment1)
+
+            // Segment after playhead
+            let segment2 = VideoSegment(startTime: playheadTime, endTime: endTime)
+            segments.append(segment2)
+
+            // Reset selection
+            resetTrim()
+        } else {
+            errorMessage = "Playhead must be within selected region"
+        }
     }
 
     func addSegment() {
