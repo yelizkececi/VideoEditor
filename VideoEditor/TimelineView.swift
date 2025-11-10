@@ -92,26 +92,28 @@ struct TimelineView: View {
                                     .frame(width: max(0, endX - startX), height: 80)
                             )
 
-                        // Start trim handle
+                        // Start trim handle - follows mouse X directly
                         TrimHandle(isStart: true)
                             .position(x: startX, y: 40)
                             .gesture(
-                                DragGesture(minimumDistance: 0)
+                                DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
                                     .onChanged { value in
-                                        let dragX = startX + value.translation.width
-                                        let newPosition = max(0, min(dragX / totalWidth, viewModel.trimEndPosition - 0.05))
+                                        // Use absolute mouse location instead of translation
+                                        let mouseX = value.location.x
+                                        let newPosition = max(0, min(mouseX / totalWidth, viewModel.trimEndPosition - 0.05))
                                         viewModel.updateTrimStart(newPosition)
                                     }
                             )
 
-                        // End trim handle
+                        // End trim handle - follows mouse X directly
                         TrimHandle(isStart: false)
                             .position(x: endX, y: 40)
                             .gesture(
-                                DragGesture(minimumDistance: 0)
+                                DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
                                     .onChanged { value in
-                                        let dragX = endX + value.translation.width
-                                        let newPosition = max(viewModel.trimStartPosition + 0.05, min(dragX / totalWidth, 1.0))
+                                        // Use absolute mouse location instead of translation
+                                        let mouseX = value.location.x
+                                        let newPosition = max(viewModel.trimStartPosition + 0.05, min(mouseX / totalWidth, 1.0))
                                         viewModel.updateTrimEnd(newPosition)
                                     }
                             )
@@ -144,6 +146,7 @@ struct TimelineView: View {
                             let newPosition = location.x / totalWidth
                             viewModel.updatePlayhead(max(0, min(newPosition, 1.0)), snapToThumbnails: true)
                         }
+                        .coordinateSpace(name: "timeline")
                     }
                     .frame(height: 100)
                     .padding(.horizontal)
