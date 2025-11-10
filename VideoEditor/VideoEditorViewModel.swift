@@ -560,13 +560,29 @@ class VideoEditorViewModel: ObservableObject {
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
 
-        await exportSession.export()
+        // Export with progress monitoring to prevent UI freeze
+        return try await withCheckedThrowingContinuation { continuation in
+            let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                Task { @MainActor in
+                    self.progress = Double(exportSession.progress)
+                    self.statusMessage = "Trimming video... \(Int(exportSession.progress * 100))%"
+                }
+            }
 
-        guard exportSession.status == .completed else {
-            throw VideoEditorError.exportFailed
+            exportSession.exportAsynchronously {
+                progressTimer.invalidate()
+
+                Task { @MainActor in
+                    self.progress = 1.0
+                }
+
+                if exportSession.status == .completed {
+                    continuation.resume(returning: outputURL)
+                } else {
+                    continuation.resume(throwing: VideoEditorError.exportFailed)
+                }
+            }
         }
-
-        return outputURL
     }
 
     // MARK: - Adjust Speed
@@ -643,13 +659,29 @@ class VideoEditorViewModel: ObservableObject {
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
 
-        await exportSession.export()
+        // Export with progress monitoring to prevent UI freeze
+        return try await withCheckedThrowingContinuation { continuation in
+            let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                Task { @MainActor in
+                    self.progress = Double(exportSession.progress)
+                    self.statusMessage = "Adjusting speed... \(Int(exportSession.progress * 100))%"
+                }
+            }
 
-        guard exportSession.status == .completed else {
-            throw VideoEditorError.exportFailed
+            exportSession.exportAsynchronously {
+                progressTimer.invalidate()
+
+                Task { @MainActor in
+                    self.progress = 1.0
+                }
+
+                if exportSession.status == .completed {
+                    continuation.resume(returning: outputURL)
+                } else {
+                    continuation.resume(throwing: VideoEditorError.exportFailed)
+                }
+            }
         }
-
-        return outputURL
     }
 
     // MARK: - Export Video
@@ -916,22 +948,37 @@ class VideoEditorViewModel: ObservableObject {
         exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
 
-        await exportSession.export()
-
-        await MainActor.run {
-            self.progress = 1.0
-        }
-
-        guard exportSession.status == .completed else {
-            print("❌ [EXPORT SEGMENTS] Export failed with status: \(exportSession.status.rawValue)")
-            if let error = exportSession.error {
-                print("❌ [EXPORT SEGMENTS] Error: \(error.localizedDescription)")
+        // Export with progress monitoring to prevent UI freeze
+        return try await withCheckedThrowingContinuation { continuation in
+            // Monitor progress on background thread
+            let progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+                Task { @MainActor in
+                    let exportProgress = Double(exportSession.progress)
+                    self.progress = 0.9 + (exportProgress * 0.1) // 90-100%
+                    self.statusMessage = "Exporting segments... \(Int(exportProgress * 100))%"
+                }
             }
-            throw VideoEditorError.exportFailed
-        }
 
-        print("🎉 [EXPORT SEGMENTS] Export completed successfully!")
-        return outputURL
+            exportSession.exportAsynchronously {
+                progressTimer.invalidate()
+
+                Task { @MainActor in
+                    self.progress = 1.0
+                    self.statusMessage = "Export complete"
+                }
+
+                if exportSession.status == .completed {
+                    print("🎉 [EXPORT SEGMENTS] Export completed successfully!")
+                    continuation.resume(returning: outputURL)
+                } else {
+                    print("❌ [EXPORT SEGMENTS] Export failed with status: \(exportSession.status.rawValue)")
+                    if let error = exportSession.error {
+                        print("❌ [EXPORT SEGMENTS] Error: \(error.localizedDescription)")
+                    }
+                    continuation.resume(throwing: VideoEditorError.exportFailed)
+                }
+            }
+        }
     }
 
     // MARK: - Helpers
