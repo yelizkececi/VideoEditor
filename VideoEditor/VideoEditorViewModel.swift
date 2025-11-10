@@ -531,13 +531,16 @@ class VideoEditorViewModel: ObservableObject {
         let endCMTime = CMTime(seconds: endTime, preferredTimescale: 600)
         let timeRange = CMTimeRange(start: startCMTime, end: endCMTime)
 
-        // Add video track
+        // Add video track with preserved orientation
         if let videoTrack = try await asset.loadTracks(withMediaType: .video).first,
            let compositionVideoTrack = composition.addMutableTrack(
             withMediaType: .video,
             preferredTrackID: kCMPersistentTrackID_Invalid
            ) {
             try compositionVideoTrack.insertTimeRange(timeRange, of: videoTrack, at: .zero)
+            // Preserve video orientation
+            let videoTransform = try await videoTrack.load(.preferredTransform)
+            compositionVideoTrack.preferredTransform = videoTransform
         }
 
         // Add audio track
@@ -624,7 +627,7 @@ class VideoEditorViewModel: ObservableObject {
         let duration = try await asset.load(.duration)
         let timeRange = CMTimeRange(start: .zero, duration: duration)
 
-        // Add video track
+        // Add video track with preserved orientation
         if let videoTrack = try await asset.loadTracks(withMediaType: .video).first,
            let compositionVideoTrack = composition.addMutableTrack(
             withMediaType: .video,
@@ -634,6 +637,10 @@ class VideoEditorViewModel: ObservableObject {
 
             let scaledDuration = CMTimeMultiplyByFloat64(duration, multiplier: 1.0 / speedMultiplier)
             compositionVideoTrack.scaleTimeRange(timeRange, toDuration: scaledDuration)
+
+            // Preserve video orientation
+            let videoTransform = try await videoTrack.load(.preferredTransform)
+            compositionVideoTrack.preferredTransform = videoTransform
         }
 
         // Add audio track
@@ -907,6 +914,9 @@ class VideoEditorViewModel: ObservableObject {
             )
         }
 
+        // Get video transform to preserve orientation
+        let videoTransform = try await videoTrack.load(.preferredTransform)
+
         // Insert each segment into the composition
         var currentTime = CMTime.zero
 
@@ -932,6 +942,9 @@ class VideoEditorViewModel: ObservableObject {
                 self.progress = Double(index + 1) / Double(segments.count) * 0.9
             }
         }
+
+        // Apply video transform to preserve orientation
+        compositionVideoTrack.preferredTransform = videoTransform
 
         print("✅ [EXPORT SEGMENTS] All segments added to composition")
 

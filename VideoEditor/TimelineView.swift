@@ -11,9 +11,12 @@ import AVFoundation
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
     @State private var hoveredThumbnailIndex: Int? = nil
-    @State private var dragSensitivity: Double = 0.5 // 0.1 = very slow, 1.0 = normal speed
+    @State private var dragSensitivity: Double = 0.3 // Lower default for better control
     @State private var isDraggingPlayhead = false
     @State private var lastDragTranslation: CGFloat = 0
+    @State private var showTimeInputs = false
+    @State private var startTimeInput = ""
+    @State private var endTimeInput = ""
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -145,38 +148,62 @@ struct TimelineView: View {
                     .frame(height: 100)
                     .padding(.horizontal)
 
-                // Time indicators
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Start")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.trimStartTimeString)
-                            .font(.caption)
-                            .monospacedDigit()
+                // Time indicators and precise input
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Start")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(viewModel.trimStartTimeString)
+                                .font(.caption)
+                                .monospacedDigit()
+                        }
+
+                        Spacer()
+
+                        VStack(spacing: 2) {
+                            Text("Playhead")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text(viewModel.playheadTimeString)
+                                .font(.caption)
+                                .monospacedDigit()
+                                .foregroundColor(.orange)
+                        }
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("End")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(viewModel.trimEndTimeString)
+                                .font(.caption)
+                                .monospacedDigit()
+                        }
                     }
 
-                    Spacer()
-
-                    VStack(spacing: 2) {
-                        Text("Playhead")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                        Text(viewModel.playheadTimeString)
-                            .font(.caption)
-                            .monospacedDigit()
-                            .foregroundColor(.orange)
+                    // Precise time input toggle
+                    Button(action: { showTimeInputs.toggle() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: showTimeInputs ? "chevron.up" : "chevron.down")
+                                .font(.caption2)
+                            Text(showTimeInputs ? "Hide Precise Input" : "Show Precise Input")
+                                .font(.caption)
+                        }
                     }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.blue)
 
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("End")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.trimEndTimeString)
-                            .font(.caption)
-                            .monospacedDigit()
+                    if showTimeInputs {
+                        PreciseTimeInputView(
+                            startTime: $startTimeInput,
+                            endTime: $endTimeInput,
+                            onApply: { start, end in
+                                applyPreciseTime(start: start, end: end)
+                            }
+                        )
                     }
                 }
                 .padding(.horizontal)
@@ -261,6 +288,42 @@ struct TimelineView: View {
             .padding(.vertical)
         }
         .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    // Helper function to apply precise time
+    private func applyPreciseTime(start: String, end: String) {
+        guard let startSeconds = parseTimeString(start),
+              let endSeconds = parseTimeString(end) else {
+            return
+        }
+
+        let duration = viewModel.videoDuration
+        let durationSeconds = parseDurationToSeconds(duration)
+
+        if startSeconds >= 0 && endSeconds <= durationSeconds && startSeconds < endSeconds {
+            viewModel.updateTrimStart(startSeconds / durationSeconds)
+            viewModel.updateTrimEnd(endSeconds / durationSeconds)
+        }
+    }
+
+    private func parseTimeString(_ timeString: String) -> Double? {
+        let components = timeString.split(separator: ":")
+        guard components.count == 2,
+              let minutes = Double(components[0]),
+              let seconds = Double(components[1]) else {
+            return nil
+        }
+        return minutes * 60 + seconds
+    }
+
+    private func parseDurationToSeconds(_ duration: String) -> Double {
+        let components = duration.split(separator: ":")
+        guard components.count == 2,
+              let minutes = Double(components[0]),
+              let seconds = Double(components[1]) else {
+            return 0
+        }
+        return minutes * 60 + seconds
     }
 }
 
@@ -463,6 +526,52 @@ struct SegmentRow: View {
             RoundedRectangle(cornerRadius: 6)
                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Precise Time Input View
+struct PreciseTimeInputView: View {
+    @Binding var startTime: String
+    @Binding var endTime: String
+    let onApply: (String, String) -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Start Time (M:SS)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    TextField("0:00", text: $startTime)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .font(.system(.body, design: .monospaced))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("End Time (M:SS)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    TextField("0:00", text: $endTime)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .font(.system(.body, design: .monospaced))
+                }
+
+                Button("Apply") {
+                    onApply(startTime, endTime)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            }
+
+            Text("Format: Minutes:Seconds (e.g., 1:30 for 1 minute 30 seconds)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding(8)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(6)
     }
 }
 
