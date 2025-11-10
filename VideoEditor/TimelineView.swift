@@ -10,44 +10,50 @@ import AVFoundation
 
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
+    @State private var hoveredThumbnailIndex: Int? = nil
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Timeline header
-            HStack {
-                Text("Timeline")
-                    .font(.headline)
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 8) {
+                // Timeline header
+                HStack {
+                    Text("Timeline")
+                        .font(.headline)
 
-                Spacer()
+                    Spacer()
+
+                    if viewModel.hasVideo {
+                        Text("Duration: \(viewModel.videoDuration)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal)
 
                 if viewModel.hasVideo {
-                    Text("Duration: \(viewModel.videoDuration)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal)
+                    // Timeline with thumbnails
+                    GeometryReader { geometry in
+                        let totalWidth = geometry.size.width
+                        let startX = viewModel.trimStartPosition * totalWidth
+                        let endX = viewModel.trimEndPosition * totalWidth
+                        let playheadX = viewModel.playheadPosition * totalWidth
 
-            if viewModel.hasVideo {
-                // Timeline with thumbnails
-                GeometryReader { geometry in
-                    let totalWidth = geometry.size.width
-                    let startX = viewModel.trimStartPosition * totalWidth
-                    let endX = viewModel.trimEndPosition * totalWidth
-                    let playheadX = viewModel.playheadPosition * totalWidth
+                        ZStack(alignment: .leading) {
+                            // Background track
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 80)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                                )
 
-                    ZStack(alignment: .leading) {
-                        // Background track
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(height: 80)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            // Thumbnail strip with improved interaction
+                            ThumbnailStripView(
+                                thumbnails: viewModel.thumbnailGenerator.thumbnails,
+                                width: totalWidth,
+                                hoveredIndex: $hoveredThumbnailIndex
                             )
-
-                        // Thumbnail strip
-                        ThumbnailStripView(thumbnails: viewModel.thumbnailGenerator.thumbnails, width: totalWidth)
                             .frame(height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
 
@@ -86,28 +92,29 @@ struct TimelineView: View {
                                     }
                             )
 
-                        // Playhead scrubber
-                        PlayheadView()
-                            .position(x: playheadX, y: 40)
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { value in
-                                        let dragX = playheadX + value.translation.width
-                                        let newPosition = max(0, min(dragX / totalWidth, 1.0))
-                                        viewModel.updatePlayhead(newPosition)
-                                    }
-                            )
-                            .onTapGesture { }
+                            // Playhead scrubber
+                            PlayheadView()
+                                .position(x: playheadX, y: 40)
+                                .gesture(
+                                    DragGesture(minimumDistance: 0)
+                                        .onChanged { value in
+                                            let dragX = playheadX + value.translation.width
+                                            let newPosition = max(0, min(dragX / totalWidth, 1.0))
+                                            viewModel.updatePlayhead(newPosition)
+                                        }
+                                )
+                                .onTapGesture { }
+                                .zIndex(10) // Ensure playhead is always on top
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { location in
+                            // Click to move playhead with snap to nearest thumbnail
+                            let newPosition = location.x / totalWidth
+                            viewModel.updatePlayhead(max(0, min(newPosition, 1.0)), snapToThumbnails: true)
+                        }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { location in
-                        // Click to move playhead
-                        let newPosition = location.x / totalWidth
-                        viewModel.updatePlayhead(max(0, min(newPosition, 1.0)))
-                    }
-                }
-                .frame(height: 100)
-                .padding(.horizontal)
+                    .frame(height: 100)
+                    .padding(.horizontal)
 
                 // Time indicators
                 HStack(spacing: 12) {
@@ -168,27 +175,28 @@ struct TimelineView: View {
                 }
                 .padding(.horizontal)
 
-                // Segments list
-                if !viewModel.segments.isEmpty {
-                    Divider()
-                        .padding(.vertical, 8)
+                    // Segments list
+                    if !viewModel.segments.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Segments (\(viewModel.segments.count))")
-                                .font(.headline)
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Segments (\(viewModel.segments.count))")
+                                    .font(.headline)
 
-                            Spacer()
+                                Spacer()
 
-                            Button("Clear All") {
-                                viewModel.clearSegments()
+                                Button("Clear All") {
+                                    viewModel.clearSegments()
+                                }
+                                .buttonStyle(.bordered)
+                                .foregroundColor(.red)
                             }
-                            .buttonStyle(.bordered)
-                            .foregroundColor(.red)
-                        }
+                            .padding(.horizontal)
 
-                        ScrollView {
-                            VStack(spacing: 4) {
+                            // Scrollable segments list with fixed height
+                            LazyVStack(spacing: 4) {
                                 ForEach(Array(viewModel.segments.enumerated()), id: \.offset) { index, segment in
                                     SegmentRow(
                                         index: index,
@@ -197,32 +205,32 @@ struct TimelineView: View {
                                         onMoveUp: { viewModel.moveSegmentUp(at: index) },
                                         onMoveDown: { viewModel.moveSegmentDown(at: index) }
                                     )
+                                    .padding(.horizontal)
                                 }
                             }
                         }
-                        .frame(maxHeight: 150)
                     }
-                    .padding(.horizontal)
-                }
-            } else {
-                // No video loaded state
-                VStack(spacing: 12) {
-                    Image(systemName: "timeline.selection")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
+                } else {
+                    // No video loaded state
+                    VStack(spacing: 12) {
+                        Image(systemName: "timeline.selection")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
 
-                    Text("No video loaded")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        Text("No video loaded")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
 
-                    Text("Import a video to use the timeline")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("Import a video to use the timeline")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(height: 120)
+                    .padding(.vertical)
                 }
-                .frame(height: 120)
             }
+            .padding(.vertical)
         }
-        .padding(.vertical)
         .background(Color(nsColor: .controlBackgroundColor))
     }
 }
@@ -231,6 +239,7 @@ struct TimelineView: View {
 struct ThumbnailStripView: View {
     let thumbnails: [ThumbnailGenerator.VideoThumbnail]
     let width: CGFloat
+    @Binding var hoveredIndex: Int?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -246,12 +255,35 @@ struct ThumbnailStripView: View {
                     endPoint: .trailing
                 )
             } else {
-                ForEach(thumbnails) { thumbnail in
+                ForEach(Array(thumbnails.enumerated()), id: \.element.id) { index, thumbnail in
+                    let isHovered = hoveredIndex == index
+
                     thumbnail.image.asImage
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: width / CGFloat(thumbnails.count), height: 80)
                         .clipped()
+                        .overlay(
+                            // Hover effect
+                            Rectangle()
+                                .fill(Color.white.opacity(isHovered ? 0.2 : 0))
+                                .animation(.easeInOut(duration: 0.1), value: isHovered)
+                        )
+                        .overlay(
+                            // Thumbnail border
+                            Rectangle()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                        .onContinuousHover { phase in
+                            switch phase {
+                            case .active:
+                                hoveredIndex = index
+                            case .ended:
+                                if hoveredIndex == index {
+                                    hoveredIndex = nil
+                                }
+                            }
+                        }
                 }
             }
         }

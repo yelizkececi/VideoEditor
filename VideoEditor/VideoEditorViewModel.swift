@@ -710,12 +710,22 @@ class VideoEditorViewModel: ObservableObject {
         trimEndPosition = position
     }
 
-    func updatePlayhead(_ position: Double) {
-        playheadPosition = position
+    func updatePlayhead(_ position: Double, snapToThumbnails: Bool = false) {
+        var finalPosition = position
+
+        // Snap to nearest thumbnail if enabled
+        if snapToThumbnails && !thumbnailGenerator.thumbnails.isEmpty {
+            let thumbnailCount = thumbnailGenerator.thumbnails.count
+            let thumbnailWidth = 1.0 / Double(thumbnailCount)
+            let nearestIndex = round(position * Double(thumbnailCount))
+            finalPosition = (nearestIndex / Double(thumbnailCount)).clamped(to: 0...1)
+        }
+
+        playheadPosition = finalPosition
 
         // Sync video player with playhead
         if let player = player, let duration = player.currentItem?.duration {
-            let timeInSeconds = position * CMTimeGetSeconds(duration)
+            let timeInSeconds = finalPosition * CMTimeGetSeconds(duration)
             let targetTime = CMTime(seconds: timeInSeconds, preferredTimescale: 600)
             player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
         }
@@ -956,5 +966,13 @@ enum VideoEditorError: LocalizedError {
         case .exportFailed:
             return "Failed to export video"
         }
+    }
+}
+
+// MARK: - Extensions
+
+extension Double {
+    func clamped(to range: ClosedRange<Double>) -> Double {
+        return min(max(self, range.lowerBound), range.upperBound)
     }
 }

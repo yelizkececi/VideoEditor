@@ -176,11 +176,11 @@ struct ContentView: View {
                     .background(Color(nsColor: .controlBackgroundColor))
                 }
 
-                // Timeline
+                // Timeline - dynamically sized to fill available space
                 Divider()
 
                 TimelineView(viewModel: viewModel)
-                    .frame(height: 300)
+                    .frame(minHeight: 300, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 900, minHeight: 900)
