@@ -55,10 +55,10 @@ struct TimelineView: View {
                 .padding(.horizontal)
 
                 if viewModel.hasVideo {
-                    // Timeline with thumbnails - playhead-relative selection
+                    // Timeline with thumbnails - absolute positioning
                     GeometryReader { geometry in
                         let totalWidth = geometry.size.width
-                        // Playhead-relative: start and end move with playhead
+                        // Absolute positioning
                         let playheadX = viewModel.playheadPosition * totalWidth
                         let startX = viewModel.trimStartPosition * totalWidth
                         let endX = viewModel.trimEndPosition * totalWidth
@@ -82,44 +82,37 @@ struct TimelineView: View {
                             .frame(height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
 
-                        // Selected region overlay
-                        Rectangle()
-                            .fill(Color.blue.opacity(0.15))
-                            .frame(width: max(0, endX - startX), height: 80)
-                            .offset(x: startX)
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.blue, lineWidth: 2)
-                                    .frame(width: max(0, endX - startX), height: 80)
-                            )
+                            // Start trim handle (left edge)
+                            TrimHandle(isStart: true)
+                                .position(x: startX, y: 49)
+                                .gesture(
+                                    DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
+                                        .onChanged { value in
+                                            let mouseX = value.location.x
+                                            let clampedX = max(0, min(mouseX, totalWidth))
+                                            let newPosition = clampedX / totalWidth
+                                            viewModel.updateTrimStart(newPosition)
+                                        }
+                                )
+                                .zIndex(5)
 
-                        // Start trim handle - follows mouse X, updates offset from playhead
-                        TrimHandle(isStart: true)
-                            .position(x: startX, y: 40)
-                            .gesture(
-                                DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
-                                    .onChanged { value in
-                                        let mouseX = value.location.x
-                                        let absolutePosition = mouseX / totalWidth
-                                        viewModel.updateTrimStartOffset(absolutePosition)
-                                    }
-                            )
-
-                        // End trim handle - follows mouse X, updates offset from playhead
-                        TrimHandle(isStart: false)
-                            .position(x: endX, y: 40)
-                            .gesture(
-                                DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
-                                    .onChanged { value in
-                                        let mouseX = value.location.x
-                                        let absolutePosition = mouseX / totalWidth
-                                        viewModel.updateTrimEndOffset(absolutePosition)
-                                    }
-                            )
+                            // End trim handle (right edge)
+                            TrimHandle(isStart: false)
+                                .position(x: endX, y: 49)
+                                .gesture(
+                                    DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
+                                        .onChanged { value in
+                                            let mouseX = value.location.x
+                                            let clampedX = max(0, min(mouseX, totalWidth))
+                                            let newPosition = clampedX / totalWidth
+                                            viewModel.updateTrimEnd(newPosition)
+                                        }
+                                )
+                                .zIndex(5)
 
                             // Playhead scrubber with adjustable sensitivity
                             PlayheadView(isDragging: isDraggingPlayhead)
-                                .position(x: playheadX, y: 40)
+                                .position(x: playheadX, y: 49)
                                 .gesture(
                                     DragGesture(minimumDistance: 0)
                                         .onChanged { value in
@@ -303,8 +296,8 @@ struct TimelineView: View {
         let durationSeconds = parseDurationToSeconds(duration)
 
         if startSeconds >= 0 && endSeconds <= durationSeconds && startSeconds < endSeconds {
-            viewModel.updateTrimStartOffset(startSeconds / durationSeconds)
-            viewModel.updateTrimEndOffset(endSeconds / durationSeconds)
+            viewModel.updateTrimStart(startSeconds / durationSeconds)
+            viewModel.updateTrimEnd(endSeconds / durationSeconds)
         }
     }
 
