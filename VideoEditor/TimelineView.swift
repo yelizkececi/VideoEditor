@@ -110,23 +110,21 @@ struct TimelineView: View {
                                 )
                                 .zIndex(5)
 
-                            // Playhead scrubber with adjustable sensitivity
+                            // Playhead scrubber - follows mouse directly
                             PlayheadView(isDragging: isDraggingPlayhead)
                                 .position(x: playheadX, y: 49)
                                 .gesture(
-                                    DragGesture(minimumDistance: 0)
+                                    DragGesture(minimumDistance: 0, coordinateSpace: .named("timeline"))
                                         .onChanged { value in
                                             isDraggingPlayhead = true
 
-                                            // Apply sensitivity to drag movement
-                                            let adjustedTranslation = value.translation.width * dragSensitivity
-                                            let dragX = playheadX + adjustedTranslation
-                                            let newPosition = max(0, min(dragX / totalWidth, 1.0))
+                                            let mouseX = value.location.x
+                                            let clampedX = max(0, min(mouseX, totalWidth))
+                                            let newPosition = clampedX / totalWidth
                                             viewModel.updatePlayhead(newPosition)
                                         }
                                         .onEnded { _ in
                                             isDraggingPlayhead = false
-                                            lastDragTranslation = 0
                                         }
                                 )
                                 .onTapGesture { }
