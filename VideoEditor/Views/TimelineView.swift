@@ -17,6 +17,7 @@ struct TimelineView: View {
     @State private var showTimeInputs = false
     @State private var startTimeInput = ""
     @State private var endTimeInput = ""
+    @State private var segmentSpeed: Double = 1.0 // Speed for new segments
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -202,25 +203,47 @@ struct TimelineView: View {
                 .padding(.horizontal)
 
                 // Controls
-                HStack(spacing: 12) {
-                    Button("Reset Selection") {
-                        viewModel.resetTrim()
-                    }
-                    .buttonStyle(.bordered)
+                VStack(spacing: 8) {
+                    // Speed selector
+                    HStack(spacing: 8) {
+                        Text("Speed:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    Button {
-                        viewModel.splitAtPlayhead()
-                    } label: {
-                        Label("Split at Playhead", systemImage: "scissors")
+                        Picker("", selection: $segmentSpeed) {
+                            Text("0.25x").tag(0.25)
+                            Text("0.5x").tag(0.5)
+                            Text("0.75x").tag(0.75)
+                            Text("1.0x (Normal)").tag(1.0)
+                            Text("1.25x").tag(1.25)
+                            Text("1.5x").tag(1.5)
+                            Text("2.0x").tag(2.0)
+                            Text("3.0x").tag(3.0)
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 140)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                    .disabled(viewModel.playheadPosition <= viewModel.trimStartPosition || viewModel.playheadPosition >= viewModel.trimEndPosition)
 
-                    Button("Add Selection") {
-                        viewModel.addSegment()
+                    HStack(spacing: 12) {
+                        Button("Reset Selection") {
+                            viewModel.resetTrim()
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            viewModel.splitAtPlayhead(speed: segmentSpeed)
+                        } label: {
+                            Label("Split at Playhead", systemImage: "scissors")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                        .disabled(viewModel.playheadPosition <= viewModel.trimStartPosition || viewModel.playheadPosition >= viewModel.trimEndPosition)
+
+                        Button("Add Selection") {
+                            viewModel.addSegment(speed: segmentSpeed)
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
                 }
                 .padding(.horizontal)
 
@@ -252,7 +275,10 @@ struct TimelineView: View {
                                         segment: segment,
                                         onDelete: { viewModel.deleteSegment(at: index) },
                                         onMoveUp: { viewModel.moveSegmentUp(at: index) },
-                                        onMoveDown: { viewModel.moveSegmentDown(at: index) }
+                                        onMoveDown: { viewModel.moveSegmentDown(at: index) },
+                                        onSpeedChange: { newSpeed in
+                                            viewModel.updateSegmentSpeed(at: index, speed: newSpeed)
+                                        }
                                     )
                                     .padding(.horizontal)
                                 }
@@ -455,6 +481,19 @@ struct SegmentRow: View {
     let onDelete: () -> Void
     let onMoveUp: () -> Void
     let onMoveDown: () -> Void
+    let onSpeedChange: (Double) -> Void
+
+    @State private var currentSpeed: Double
+
+    init(index: Int, segment: VideoSegment, onDelete: @escaping () -> Void, onMoveUp: @escaping () -> Void, onMoveDown: @escaping () -> Void, onSpeedChange: @escaping (Double) -> Void) {
+        self.index = index
+        self.segment = segment
+        self.onDelete = onDelete
+        self.onMoveUp = onMoveUp
+        self.onMoveDown = onMoveDown
+        self.onSpeedChange = onSpeedChange
+        self._currentSpeed = State(initialValue: segment.speed)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -479,6 +518,23 @@ struct SegmentRow: View {
             }
 
             Spacer()
+
+            // Speed picker
+            Picker("", selection: $currentSpeed) {
+                Text("0.25x").tag(0.25)
+                Text("0.5x").tag(0.5)
+                Text("0.75x").tag(0.75)
+                Text("1.0x").tag(1.0)
+                Text("1.25x").tag(1.25)
+                Text("1.5x").tag(1.5)
+                Text("2.0x").tag(2.0)
+                Text("3.0x").tag(3.0)
+            }
+            .pickerStyle(.menu)
+            .frame(width: 80)
+            .onChange(of: currentSpeed) { newSpeed in
+                onSpeedChange(newSpeed)
+            }
 
             // Duration
             Text(segment.durationString)

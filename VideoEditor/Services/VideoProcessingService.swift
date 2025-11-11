@@ -219,17 +219,39 @@ class VideoProcessingService {
             let duration = CMTimeSubtract(endTime, startTime)
             let timeRange = CMTimeRange(start: startTime, duration: duration)
 
-            print("📝 [EXPORT SEGMENTS] Adding segment \(index + 1): \(segment.startTimeString) - \(segment.endTimeString)")
+            print("📝 [EXPORT SEGMENTS] Adding segment \(index + 1): \(segment.startTimeString) - \(segment.endTimeString) at \(segment.speed)x speed")
 
             // Insert video
             try compositionVideoTrack.insertTimeRange(timeRange, of: videoTrack, at: currentTime)
 
+            // Apply speed adjustment if not normal speed
+            if segment.speed != 1.0 {
+                let scaledDuration = CMTimeMultiplyByFloat64(duration, multiplier: 1.0 / segment.speed)
+                compositionVideoTrack.scaleTimeRange(
+                    CMTimeRange(start: currentTime, duration: duration),
+                    toDuration: scaledDuration
+                )
+            }
+
             // Insert audio if available
             if let audioTrack = audioTracks.first, let compAudioTrack = compositionAudioTrack {
                 try compAudioTrack.insertTimeRange(timeRange, of: audioTrack, at: currentTime)
+
+                // Apply same speed adjustment to audio
+                if segment.speed != 1.0 {
+                    let scaledDuration = CMTimeMultiplyByFloat64(duration, multiplier: 1.0 / segment.speed)
+                    compAudioTrack.scaleTimeRange(
+                        CMTimeRange(start: currentTime, duration: duration),
+                        toDuration: scaledDuration
+                    )
+                }
             }
 
-            currentTime = CMTimeAdd(currentTime, duration)
+            // Update currentTime with adjusted duration
+            let adjustedDuration = segment.speed != 1.0
+                ? CMTimeMultiplyByFloat64(duration, multiplier: 1.0 / segment.speed)
+                : duration
+            currentTime = CMTimeAdd(currentTime, adjustedDuration)
 
             // Update progress (segments building: 0-90%)
             progressCallback?(Double(index + 1) / Double(segments.count) * 0.9, "Building segments...")

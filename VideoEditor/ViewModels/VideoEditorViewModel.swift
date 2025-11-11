@@ -363,7 +363,7 @@ class VideoEditorViewModel: ObservableObject {
         trimEndPosition = 1.0
     }
 
-    func splitAtPlayhead() {
+    func splitAtPlayhead(speed: Double = 1.0) {
         guard playheadPosition > 0.0 && playheadPosition < 1.0 else {
             errorMessage = "Playhead must be between start and end"
             return
@@ -374,10 +374,10 @@ class VideoEditorViewModel: ObservableObject {
         let endTime = trimEndPosition * videoDurationSeconds
 
         if playheadPosition > trimStartPosition && playheadPosition < trimEndPosition {
-            let segment1 = VideoSegment(startTime: startTime, endTime: playheadTime)
+            let segment1 = VideoSegment(startTime: startTime, endTime: playheadTime, speed: speed)
             segments.append(segment1)
 
-            let segment2 = VideoSegment(startTime: playheadTime, endTime: endTime)
+            let segment2 = VideoSegment(startTime: playheadTime, endTime: endTime, speed: speed)
             segments.append(segment2)
 
             resetTrim()
@@ -386,11 +386,11 @@ class VideoEditorViewModel: ObservableObject {
         }
     }
 
-    func addSegment() {
+    func addSegment(speed: Double = 1.0) {
         let startTime = trimStartPosition * videoDurationSeconds
         let endTime = trimEndPosition * videoDurationSeconds
 
-        let segment = VideoSegment(startTime: startTime, endTime: endTime)
+        let segment = VideoSegment(startTime: startTime, endTime: endTime, speed: speed)
         segments.append(segment)
 
         resetTrim()
@@ -413,6 +413,11 @@ class VideoEditorViewModel: ObservableObject {
 
     func clearSegments() {
         segments.removeAll()
+    }
+
+    func updateSegmentSpeed(at index: Int, speed: Double) {
+        guard index >= 0 && index < segments.count else { return }
+        segments[index].speed = speed
     }
 
     // MARK: - Helper Methods (UI Formatting)

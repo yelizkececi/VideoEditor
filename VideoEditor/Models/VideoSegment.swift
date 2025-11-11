@@ -11,9 +11,14 @@ struct VideoSegment: Identifiable {
     let id = UUID()
     let startTime: Double
     let endTime: Double
+    var speed: Double // Speed multiplier (1.0 = normal, 2.0 = 2x, 0.5 = half speed)
 
     var duration: Double {
         endTime - startTime
+    }
+
+    var adjustedDuration: Double {
+        duration / speed
     }
 
     var startTimeString: String {
