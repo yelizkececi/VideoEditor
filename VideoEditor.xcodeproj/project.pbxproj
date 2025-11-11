@@ -14,6 +14,7 @@
 		AA1111110000000000000001 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1111120000000000000001 /* TimelineView.swift */; };
 		AA2222210000000000000001 /* VideoSegment.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2222220000000000000001 /* VideoSegment.swift */; };
 		AA3333310000000000000001 /* ThumbnailGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3333320000000000000001 /* ThumbnailGenerator.swift */; };
+		AA9999910000000000000001 /* VideoProcessingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9999920000000000000001 /* VideoProcessingService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		AA1111120000000000000001 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		AA2222220000000000000001 /* VideoSegment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSegment.swift; sourceTree = "<group>"; };
 		AA3333320000000000000001 /* ThumbnailGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailGenerator.swift; sourceTree = "<group>"; };
+		AA9999920000000000000001 /* VideoProcessingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessingService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				AA3333320000000000000001 /* ThumbnailGenerator.swift */,
+				AA9999920000000000000001 /* VideoProcessingService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -187,6 +190,7 @@
 				AA0000050000000000000001 /* VideoEditorViewModel.swift in Sources */,
 				AA2222210000000000000001 /* VideoSegment.swift in Sources */,
 				AA3333310000000000000001 /* ThumbnailGenerator.swift in Sources */,
+				AA9999910000000000000001 /* VideoProcessingService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
