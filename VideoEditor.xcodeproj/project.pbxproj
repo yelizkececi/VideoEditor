@@ -51,17 +51,57 @@
 		AA0000140000000000000001 /* VideoEditor */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000020000000000000001 /* VideoEditorApp.swift */,
-				AA0000040000000000000001 /* ContentView.swift */,
-				AA1111120000000000000001 /* TimelineView.swift */,
-				AA0000060000000000000001 /* VideoEditorViewModel.swift */,
-				AA2222220000000000000001 /* VideoSegment.swift */,
-				AA3333320000000000000001 /* ThumbnailGenerator.swift */,
+				AA4444440000000000000001 /* App */,
+				AA5555550000000000000001 /* Views */,
+				AA6666660000000000000001 /* ViewModels */,
+				AA7777770000000000000001 /* Models */,
+				AA8888880000000000000001 /* Services */,
 				AA0000080000000000000001 /* Assets.xcassets */,
 				AA0000100000000000000001 /* VideoEditor.entitlements */,
 				AA0000110000000000000001 /* Info.plist */,
 			);
 			path = VideoEditor;
+			sourceTree = "<group>";
+		};
+		AA4444440000000000000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000001 /* VideoEditorApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AA5555550000000000000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000040000000000000001 /* ContentView.swift */,
+				AA1111120000000000000001 /* TimelineView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA6666660000000000000001 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000060000000000000001 /* VideoEditorViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		AA7777770000000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA2222220000000000000001 /* VideoSegment.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AA8888880000000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AA3333320000000000000001 /* ThumbnailGenerator.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		AA0000150000000000000001 /* Products */ = {
