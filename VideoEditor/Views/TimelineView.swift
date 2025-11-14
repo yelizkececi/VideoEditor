@@ -10,48 +10,23 @@ import AVFoundation
 
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
-    @State private var hoveredThumbnailIndex: Int? = nil
-    @State private var dragSensitivity: Double = 0.3 // Lower default for better control
     @State private var isDraggingPlayhead = false
-    @State private var lastDragTranslation: CGFloat = 0
     @State private var showTimeInputs = false
     @State private var startTimeInput = ""
     @State private var endTimeInput = ""
     @State private var segmentSpeed: Double = 1.0 // Speed for new segments
+    @State private var thumbnailUpdateTrigger = 0
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 8) {
-                // Timeline header with sensitivity control
+                // Timeline header
                 HStack {
                     Text("Timeline")
                         .font(.headline)
 
                     Spacer()
-
-                    if viewModel.hasVideo {
-                        // Sensitivity control
-                        HStack(spacing: 8) {
-                            Image(systemName: "gauge.with.dots.needle.33percent")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            Slider(value: $dragSensitivity, in: 0.1...1.0, step: 0.1)
-                                .frame(width: 100)
-
-                            Text("\(Int(dragSensitivity * 100))%")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .frame(width: 35)
-
-                            Divider()
-                                .frame(height: 16)
-                        }
-
-                        Text("Duration: \(viewModel.videoDuration)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    Spacer()
                 }
                 .padding(.horizontal)
 
@@ -73,15 +48,41 @@ struct TimelineView: View {
                                     RoundedRectangle(cornerRadius: 6)
                                         .stroke(Color.gray.opacity(0.4), lineWidth: 1)
                                 )
+                                .zIndex(0)
 
-                            // Thumbnail strip with improved interaction
-                            ThumbnailStripView(
-                                thumbnails: viewModel.thumbnailGenerator.thumbnails,
-                                width: totalWidth,
-                                hoveredIndex: $hoveredThumbnailIndex
-                            )
-                            .frame(height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            // Thumbnail strip or loading indicator
+                            if viewModel.thumbnailGenerator.isGenerating && viewModel.thumbnailGenerator.thumbnails.isEmpty {
+                                // Loading indicator
+                                ZStack {
+                                    Color.black.opacity(0.3)
+
+                                    VStack(spacing: 8) {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                            .tint(.white)
+
+                                        Text("Generating thumbnails...")
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .frame(height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .zIndex(1)
+                            } else {
+                                // Thumbnail strip
+                                ThumbnailStripView(
+                                    thumbnails: viewModel.thumbnailGenerator.thumbnails,
+                                    width: totalWidth
+                                )
+                                .frame(height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .zIndex(1)
+                                .onChange(of: viewModel.thumbnailGenerator.thumbnails.count) { newCount in
+                                    thumbnailUpdateTrigger += 1
+                                }
+                                .id(thumbnailUpdateTrigger)
+                            }
 
                             // Start trim handle (left edge)
                             TrimHandle(isStart: true)
@@ -244,6 +245,19 @@ struct TimelineView: View {
                         }
                         .buttonStyle(.borderedProminent)
                     }
+
+                    HStack(spacing: 12) {
+                        Button {
+                            Task {
+                                await viewModel.reverseVideo()
+                            }
+                        } label: {
+                            Label("Reverse Video", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.purple)
+                        .disabled(viewModel.isProcessing)
+                    }
                 }
                 .padding(.horizontal)
 
@@ -350,52 +364,20 @@ struct TimelineView: View {
 struct ThumbnailStripView: View {
     let thumbnails: [ThumbnailGenerator.VideoThumbnail]
     let width: CGFloat
-    @Binding var hoveredIndex: Int?
 
     var body: some View {
         HStack(spacing: 0) {
-            if thumbnails.isEmpty {
-                // Placeholder gradient while thumbnails load
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.blue.opacity(0.3),
-                        Color.purple.opacity(0.3),
-                        Color.pink.opacity(0.3)
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            } else {
-                ForEach(Array(thumbnails.enumerated()), id: \.element.id) { index, thumbnail in
-                    let isHovered = hoveredIndex == index
-
-                    thumbnail.image.asImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: width / CGFloat(thumbnails.count), height: 80)
-                        .clipped()
-                        .overlay(
-                            // Hover effect
-                            Rectangle()
-                                .fill(Color.white.opacity(isHovered ? 0.2 : 0))
-                                .animation(.easeInOut(duration: 0.1), value: isHovered)
-                        )
-                        .overlay(
-                            // Thumbnail border
-                            Rectangle()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
-                        .onContinuousHover { phase in
-                            switch phase {
-                            case .active:
-                                hoveredIndex = index
-                            case .ended:
-                                if hoveredIndex == index {
-                                    hoveredIndex = nil
-                                }
-                            }
-                        }
-                }
+            ForEach(Array(thumbnails.enumerated()), id: \.element.id) { index, thumbnail in
+                thumbnail.image.asImage
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: width / CGFloat(thumbnails.count), height: 80)
+                    .clipped()
+                    .overlay(
+                        // Thumbnail border
+                        Rectangle()
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
             }
         }
     }

@@ -80,14 +80,19 @@ class ThumbnailGenerator: ObservableObject {
                 // Update UI periodically
                 if generatedThumbnails.count % 3 == 0 {
                     thumbnails = generatedThumbnails
+                    objectWillChange.send()
+                    print("📸 Generated \(thumbnails.count) thumbnails so far...")
                 }
             } catch {
                 print("❌ Failed to generate thumbnail at \(CMTimeGetSeconds(time))s: \(error)")
             }
         }
 
+        // Final update
         thumbnails = generatedThumbnails
         isGenerating = false
+        objectWillChange.send()
+        print("✅ All \(thumbnails.count) thumbnails generated!")
     }
 
     /// Generate a single thumbnail at a specific time
