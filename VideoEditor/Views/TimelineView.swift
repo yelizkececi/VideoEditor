@@ -10,12 +10,17 @@ import AVFoundation
 
 struct TimelineView: View {
     @ObservedObject var viewModel: VideoEditorViewModel
+    @ObservedObject var thumbnailGenerator: ThumbnailGenerator
     @State private var isDraggingPlayhead = false
     @State private var showTimeInputs = false
     @State private var startTimeInput = ""
     @State private var endTimeInput = ""
     @State private var segmentSpeed: Double = 1.0 // Speed for new segments
-    @State private var thumbnailUpdateTrigger = 0
+
+    init(viewModel: VideoEditorViewModel) {
+        self.viewModel = viewModel
+        self.thumbnailGenerator = viewModel.thumbnailGenerator
+    }
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -50,39 +55,15 @@ struct TimelineView: View {
                                 )
                                 .zIndex(0)
 
-                            // Thumbnail strip or loading indicator
-                            if viewModel.thumbnailGenerator.isGenerating && viewModel.thumbnailGenerator.thumbnails.isEmpty {
-                                // Loading indicator
-                                ZStack {
-                                    Color.black.opacity(0.3)
-
-                                    VStack(spacing: 8) {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                            .tint(.white)
-
-                                        Text("Generating thumbnails...")
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                    }
-                                }
-                                .frame(height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .zIndex(1)
-                            } else {
-                                // Thumbnail strip
-                                ThumbnailStripView(
-                                    thumbnails: viewModel.thumbnailGenerator.thumbnails,
-                                    width: totalWidth
-                                )
-                                .frame(height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                                .zIndex(1)
-                                .onChange(of: viewModel.thumbnailGenerator.thumbnails.count) { newCount in
-                                    thumbnailUpdateTrigger += 1
-                                }
-                                .id(thumbnailUpdateTrigger)
-                            }
+                            // Thumbnail strip (always show, will be empty initially)
+                            ThumbnailStripView(
+                                thumbnails: thumbnailGenerator.thumbnails,
+                                width: totalWidth,
+                                isGenerating: thumbnailGenerator.isGenerating
+                            )
+                            .frame(height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .zIndex(1)
 
                             // Start trim handle (left edge)
                             TrimHandle(isStart: true)
@@ -132,7 +113,6 @@ struct TimelineView: View {
                                 .onTapGesture { }
                                 .zIndex(10) // Ensure playhead is always on top
                         }
-                        .contentShape(Rectangle())
                         .onTapGesture { location in
                             // Click to move playhead with snap to nearest thumbnail
                             let newPosition = location.x / totalWidth
@@ -364,20 +344,43 @@ struct TimelineView: View {
 struct ThumbnailStripView: View {
     let thumbnails: [ThumbnailGenerator.VideoThumbnail]
     let width: CGFloat
+    let isGenerating: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(thumbnails.enumerated()), id: \.element.id) { index, thumbnail in
-                thumbnail.image.asImage
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: width / CGFloat(thumbnails.count), height: 80)
-                    .clipped()
-                    .overlay(
-                        // Thumbnail border
-                        Rectangle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
+        Group {
+            if !thumbnails.isEmpty {
+                // Thumbnails available - ALWAYS show these first
+                HStack(spacing: 0) {
+                    ForEach(Array(thumbnails.enumerated()), id: \.element.id) { index, thumbnail in
+                        thumbnail.image.asImage
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: width / CGFloat(thumbnails.count), height: 80)
+                            .clipped()
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                }
+            } else if isGenerating {
+                // Loading indicator - only when generating and empty
+                ZStack {
+                    Color.gray.opacity(0.1)
+
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .controlSize(.small)
+
+                        Text("Loading thumbnails...")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } else {
+                // Empty state
+                Color.clear
             }
         }
     }
@@ -514,14 +517,15 @@ struct SegmentRow: View {
             }
             .pickerStyle(.menu)
             .frame(width: 80)
-            .onChange(of: currentSpeed) { newSpeed in
-                onSpeedChange(newSpeed)
+            .onChange(of: currentSpeed) { oldValue, newValue in
+                onSpeedChange(newValue)
             }
 
             // Duration
             Text(segment.durationString)
                 .font(.caption)
                 .foregroundColor(.secondary)
+            
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color.gray.opacity(0.2))
