@@ -76,38 +76,28 @@ class VideoEditorViewModel: ObservableObject {
     }
 
     private func loadVideo(from url: URL) async {
-        print("🎬 [LOAD] Starting to load video: \(url.lastPathComponent)")
-
         isProcessing = true
         statusMessage = "Loading video..."
 
         currentVideoURL = url
         videoFileName = url.lastPathComponent
 
-        print("🎬 [LOAD] Creating AVAsset...")
         let asset = AVAsset(url: url)
         currentAsset = asset
 
-        // Perform heavy loading off main thread
-        print("🎬 [LOAD] Loading video duration (background thread)...")
+        // Load video duration in background
         let durationSeconds = await Task.detached {
             do {
                 let duration = try await asset.load(.duration)
-                let seconds = CMTimeGetSeconds(duration)
-                print("✅ [LOAD] Duration loaded: \(seconds)s")
-                return seconds
+                return CMTimeGetSeconds(duration)
             } catch {
-                print("❌ [LOAD] Failed to load duration: \(error)")
                 return 0.0
             }
         }.value
 
-        // Update UI on main thread
         videoDurationSeconds = durationSeconds
         videoDuration = durationSeconds > 0 ? formatDuration(durationSeconds) : "Unknown"
-        print("🎬 [LOAD] Duration set: \(videoDuration)")
 
-        print("🎬 [LOAD] Creating player...")
         let playerItem = AVPlayerItem(asset: asset)
         let newPlayer = AVPlayer(playerItem: playerItem)
 
@@ -117,25 +107,20 @@ class VideoEditorViewModel: ObservableObject {
         isProcessing = false
         statusMessage = ""
 
-        print("✅ [LOAD] Player created and video loaded!")
-
         // Reset timeline
         playheadPosition = 0.5
         trimStartPosition = 0.0
         trimEndPosition = 1.0
         segments.removeAll()
 
-        // Generate thumbnails - do it immediately, synchronously
-        print("📸 [LOAD] Starting thumbnail generation...")
+        // Generate thumbnails
         do {
             try await thumbnailGenerator.generateThumbnails(for: asset, count: 15)
-            print("✅ [LOAD] Thumbnail generation complete!")
         } catch {
-            print("❌ [LOAD] Failed to generate thumbnails: \(error)")
+            errorMessage = "Failed to generate thumbnails: \(error.localizedDescription)"
         }
 
         // Auto-play
-        print("▶️ [LOAD] Starting playback...")
         newPlayer.play()
     }
 

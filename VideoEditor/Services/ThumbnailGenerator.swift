@@ -30,28 +30,20 @@ class ThumbnailGenerator: ObservableObject {
     ///   - asset: The video asset to generate thumbnails from
     ///   - count: Number of thumbnails to generate (default: 10)
     func generateThumbnails(for asset: AVAsset, count: Int = 10) async throws {
-        print("📸 [THUMBNAIL] Starting generation for \(count) thumbnails")
-
-        // IMPORTANT: Update state on main thread
         await MainActor.run {
             isGenerating = true
             thumbnails.removeAll()
         }
         currentAsset = asset
 
-        print("📸 [THUMBNAIL] Loading asset duration...")
         let duration = try await asset.load(.duration)
         let durationSeconds = CMTimeGetSeconds(duration)
-        print("📸 [THUMBNAIL] Asset duration: \(durationSeconds)s")
 
         guard durationSeconds > 0 else {
-            print("❌ [THUMBNAIL] Invalid duration, aborting")
             isGenerating = false
             return
         }
 
-        // Create image generator
-        print("📸 [THUMBNAIL] Creating image generator...")
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
         generator.maximumSize = CGSize(width: 200, height: 200)
@@ -59,7 +51,6 @@ class ThumbnailGenerator: ObservableObject {
         generator.requestedTimeToleranceAfter = .zero
         imageGenerator = generator
 
-        // Calculate time intervals
         let interval = durationSeconds / Double(count)
         var times: [CMTime] = []
 
@@ -68,9 +59,7 @@ class ThumbnailGenerator: ObservableObject {
             let time = CMTime(seconds: timeInSeconds, preferredTimescale: 600)
             times.append(time)
         }
-        print("📸 [THUMBNAIL] Will generate at times: \(times.map { CMTimeGetSeconds($0) })")
 
-        // Generate thumbnails
         var generatedThumbnails: [VideoThumbnail] = []
 
         for (index, time) in times.enumerated() {
@@ -87,29 +76,26 @@ class ThumbnailGenerator: ObservableObject {
 
                 generatedThumbnails.append(thumbnail)
 
-                // Update UI periodically - force main thread update
+                // Update UI periodically
                 if generatedThumbnails.count % 3 == 0 {
                     await MainActor.run {
                         thumbnails = generatedThumbnails
                     }
-                    print("📸 Generated \(thumbnails.count) thumbnails so far...")
-                    print("📸 Published thumbnails array now has \(thumbnails.count) items")
                 }
             } catch {
-                print("❌ Failed to generate thumbnail at \(CMTimeGetSeconds(time))s: \(error)")
+                // Skip failed thumbnails silently
+                continue
             }
         }
 
-        // Final update - CRITICAL: Must be on main thread
+        // Final update
         await MainActor.run {
             thumbnails = generatedThumbnails
             isGenerating = false
-            print("✅ All \(thumbnails.count) thumbnails generated!")
-            print("📸 Final: thumbnails.count = \(thumbnails.count), isGenerating = \(isGenerating)")
         }
 
-        // Force a tiny delay to ensure UI processes the update
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+        // Small delay to ensure UI processes the update
+        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 
     /// Generate a single thumbnail at a specific time
