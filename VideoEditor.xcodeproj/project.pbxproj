@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		51F53E9E2ECCBCFA002225D3 /* TextOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F53E9D2ECCBCFA002225D3 /* TextOverlay.swift */; };
+		51F53EA12ECCBD3F002225D3 /* TextOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F53E9F2ECCBD3F002225D3 /* TextOverlayView.swift */; };
+		51F53EA22ECCBD3F002225D3 /* VideoPlayerWithText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F53EA02ECCBD3F002225D3 /* VideoPlayerWithText.swift */; };
 		AA0000010000000000000001 /* VideoEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* VideoEditorApp.swift */; };
 		AA0000030000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000040000000000000001 /* ContentView.swift */; };
 		AA0000050000000000000001 /* VideoEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000060000000000000001 /* VideoEditorViewModel.swift */; };
@@ -37,6 +40,9 @@
 /* Begin PBXFileReference section */
 		51F53E762ECCB7B5002225D3 /* VideoEditorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoEditorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		51F53E872ECCB81A002225D3 /* VideoEditorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoEditorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		51F53E9D2ECCBCFA002225D3 /* TextOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextOverlay.swift; sourceTree = "<group>"; };
+		51F53E9F2ECCBD3F002225D3 /* TextOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextOverlayView.swift; sourceTree = "<group>"; };
+		51F53EA02ECCBD3F002225D3 /* VideoPlayerWithText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerWithText.swift; sourceTree = "<group>"; };
 		AA0000020000000000000001 /* VideoEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorApp.swift; sourceTree = "<group>"; };
 		AA0000040000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA0000060000000000000001 /* VideoEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorViewModel.swift; sourceTree = "<group>"; };
@@ -126,6 +132,8 @@
 		AA5555550000000000000001 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				51F53E9F2ECCBD3F002225D3 /* TextOverlayView.swift */,
+				51F53EA02ECCBD3F002225D3 /* VideoPlayerWithText.swift */,
 				AA0000040000000000000001 /* ContentView.swift */,
 				AA1111120000000000000001 /* TimelineView.swift */,
 			);
@@ -143,6 +151,7 @@
 		AA7777770000000000000001 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				51F53E9D2ECCBCFA002225D3 /* TextOverlay.swift */,
 				AA2222220000000000000001 /* VideoSegment.swift */,
 			);
 			path = Models;
@@ -311,8 +320,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000010000000000000001 /* VideoEditorApp.swift in Sources */,
+				51F53EA12ECCBD3F002225D3 /* TextOverlayView.swift in Sources */,
+				51F53EA22ECCBD3F002225D3 /* VideoPlayerWithText.swift in Sources */,
 				AA0000030000000000000001 /* ContentView.swift in Sources */,
 				AA1111110000000000000001 /* TimelineView.swift in Sources */,
+				51F53E9E2ECCBCFA002225D3 /* TextOverlay.swift in Sources */,
 				AA0000050000000000000001 /* VideoEditorViewModel.swift in Sources */,
 				AA2222210000000000000001 /* VideoSegment.swift in Sources */,
 				AA3333310000000000000001 /* ThumbnailGenerator.swift in Sources */,

@@ -117,6 +117,8 @@ struct TextOverlayPanel: View {
                 TextOverlayEditor(
                     overlay: selectedOverlay,
                     videoDuration: viewModel.videoDurationSeconds,
+                    existingOverlays: viewModel.textOverlays.filter { $0.id != selectedOverlay.id },
+                    viewModel: viewModel,
                     onSave: { updatedOverlay in
                         viewModel.updateTextOverlay(updatedOverlay)
                         showingEditor = false
@@ -191,14 +193,19 @@ struct TextOverlayRow: View {
 struct TextOverlayEditor: View {
     @State private var overlay: TextOverlay
     let videoDuration: Double
+    let existingOverlays: [TextOverlay]
+    @ObservedObject var viewModel: VideoEditorViewModel
     let onSave: (TextOverlay) -> Void
     let onCancel: () -> Void
 
     @State private var availableFonts: [String] = []
+    @State private var isAnalyzingColors = false
 
-    init(overlay: TextOverlay, videoDuration: Double, onSave: @escaping (TextOverlay) -> Void, onCancel: @escaping () -> Void) {
+    init(overlay: TextOverlay, videoDuration: Double, existingOverlays: [TextOverlay], viewModel: VideoEditorViewModel, onSave: @escaping (TextOverlay) -> Void, onCancel: @escaping () -> Void) {
         _overlay = State(initialValue: overlay)
         self.videoDuration = videoDuration
+        self.existingOverlays = existingOverlays
+        self.viewModel = viewModel
         self.onSave = onSave
         self.onCancel = onCancel
     }
@@ -212,6 +219,34 @@ struct TextOverlayEditor: View {
                     .fontWeight(.semibold)
 
                 Spacer()
+
+                // Smart Auto button - does position + styling
+                Button(action: {
+                    Task {
+                        isAnalyzingColors = true
+                        // First auto-position
+                        overlay.autoPosition(existingOverlays: existingOverlays)
+                        // Then auto-style based on that position
+                        if let frame = await viewModel.extractFrame(at: overlay.startTime) {
+                            overlay.autoStyle(videoFrame: frame)
+                        }
+                        isAnalyzingColors = false
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        if isAnalyzingColors {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .controlSize(.small)
+                        } else {
+                            Image(systemName: "sparkles")
+                        }
+                        Text("Smart Auto")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(isAnalyzingColors)
+                .help("Automatically optimize position and colors")
 
                 Button("Cancel") {
                     onCancel()
@@ -305,15 +340,62 @@ struct TextOverlayEditor: View {
                             }
                         }
 
-                        Text("Preview position: \(positionDescription)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Text("Preview position: \(positionDescription)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            Spacer()
+
+                            Button(action: {
+                                overlay.autoPosition(existingOverlays: existingOverlays)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "wand.and.stars")
+                                        .font(.caption)
+                                    Text("Auto-Position")
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .help("Automatically find the best position avoiding other overlays")
+                        }
                     }
 
                     // Styling
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Styling")
-                            .font(.headline)
+                        HStack {
+                            Text("Styling")
+                                .font(.headline)
+
+                            Spacer()
+
+                            Button(action: {
+                                Task {
+                                    isAnalyzingColors = true
+                                    if let frame = await viewModel.extractFrame(at: overlay.startTime) {
+                                        overlay.autoStyle(videoFrame: frame)
+                                    }
+                                    isAnalyzingColors = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    if isAnalyzingColors {
+                                        ProgressView()
+                                            .scaleEffect(0.5)
+                                            .controlSize(.small)
+                                    } else {
+                                        Image(systemName: "paintpalette")
+                                            .font(.caption)
+                                    }
+                                    Text("Auto-Style")
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isAnalyzingColors)
+                            .help("Analyze video background and set optimal text/background colors")
+                        }
 
                         HStack(spacing: 16) {
                             VStack(alignment: .leading) {

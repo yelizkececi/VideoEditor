@@ -39,7 +39,7 @@ class VideoEditorViewModel: ObservableObject {
 
     private var currentVideoURL: URL?
     private var currentAsset: AVAsset?
-    private var videoDurationSeconds: Double = 0.0
+    var videoDurationSeconds: Double = 0.0 // Internal for text overlay timing
 
     // Services (Business Logic Layer)
     private let videoProcessingService = VideoProcessingService()
@@ -541,6 +541,27 @@ class VideoEditorViewModel: ObservableObject {
         case subtitle
         case watermark
         case custom
+    }
+
+    // MARK: - Video Frame Extraction
+
+    func extractFrame(at time: Double) async -> NSImage? {
+        guard let asset = currentAsset else { return nil }
+
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
+
+        let cmTime = CMTime(seconds: time, preferredTimescale: 600)
+
+        do {
+            let cgImage = try await generator.image(at: cmTime).image
+            return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        } catch {
+            print("Error extracting frame: \(error)")
+            return nil
+        }
     }
 
     // MARK: - Helper Methods (UI Formatting)

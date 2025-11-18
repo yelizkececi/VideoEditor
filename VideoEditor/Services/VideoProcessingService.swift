@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import AppKit
 
 /// Service responsible for all video processing operations
 class VideoProcessingService {
