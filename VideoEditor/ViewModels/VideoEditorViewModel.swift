@@ -31,6 +31,10 @@ class VideoEditorViewModel: ObservableObject {
     @Published var segments: [VideoSegment] = []
     @Published var thumbnailGenerator = ThumbnailGenerator()
 
+    // Text overlay properties
+    @Published var textOverlays: [TextOverlay] = []
+    @Published var selectedTextOverlay: TextOverlay?
+
     // MARK: - Private Properties
 
     private var currentVideoURL: URL?
@@ -259,8 +263,32 @@ class VideoEditorViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            var finalURL = inputURL
+
+            // Apply text overlays if any
+            if !textOverlays.isEmpty {
+                statusMessage = "Applying text overlays..."
+                finalURL = try await videoProcessingService.applyTextOverlays(
+                    inputURL: inputURL,
+                    textOverlays: textOverlays,
+                    progressCallback: { [weak self] progress, message in
+                        Task { @MainActor in
+                            self?.progress = progress * 0.8 // 80% for text overlay
+                            self?.statusMessage = message
+                        }
+                    }
+                )
+            }
+
             try? FileManager.default.removeItem(at: outputURL)
-            try FileManager.default.copyItem(at: inputURL, to: outputURL)
+
+            if finalURL == inputURL {
+                // No text overlays, simple copy
+                try FileManager.default.copyItem(at: inputURL, to: outputURL)
+            } else {
+                // Move processed file
+                try FileManager.default.moveItem(at: finalURL, to: outputURL)
+            }
 
             statusMessage = "Video exported successfully"
             progress = 1.0
@@ -273,6 +301,33 @@ class VideoEditorViewModel: ObservableObject {
 
         isProcessing = false
         progress = 0.0
+    }
+
+    func exportVideoWithText() {
+        guard let inputURL = currentVideoURL else {
+            errorMessage = "No video loaded"
+            return
+        }
+
+        guard !textOverlays.isEmpty else {
+            errorMessage = "No text overlays to apply"
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.mpeg4Movie]
+        panel.nameFieldStringValue = "video_with_text.mp4"
+        panel.message = "Export video with text overlays"
+
+        panel.begin { [weak self] response in
+            guard let self = self else { return }
+
+            if response == .OK, let url = panel.url {
+                Task { @MainActor in
+                    await self.performExport(from: inputURL, to: url)
+                }
+            }
+        }
     }
 
     func exportSegments() {
@@ -423,6 +478,69 @@ class VideoEditorViewModel: ObservableObject {
     func updateSegmentSpeed(at index: Int, speed: Double) {
         guard index >= 0 && index < segments.count else { return }
         segments[index].speed = speed
+    }
+
+    // MARK: - Text Overlay Management
+
+    func addTextOverlay(preset: TextOverlayPreset = .custom) {
+        let overlay: TextOverlay
+        let currentTime = playheadPosition * videoDurationSeconds
+
+        switch preset {
+        case .title:
+            overlay = TextOverlay.titlePreset()
+        case .subtitle:
+            overlay = TextOverlay.subtitlePreset()
+        case .watermark:
+            overlay = TextOverlay.watermarkPreset()
+        case .custom:
+            overlay = TextOverlay(
+                startTime: currentTime,
+                endTime: min(currentTime + 5.0, videoDurationSeconds)
+            )
+        }
+
+        textOverlays.append(overlay)
+        selectedTextOverlay = overlay
+    }
+
+    func deleteTextOverlay(at index: Int) {
+        guard index >= 0 && index < textOverlays.count else { return }
+        let removedOverlay = textOverlays[index]
+        textOverlays.remove(at: index)
+
+        if selectedTextOverlay?.id == removedOverlay.id {
+            selectedTextOverlay = nil
+        }
+    }
+
+    func updateTextOverlay(_ overlay: TextOverlay) {
+        if let index = textOverlays.firstIndex(where: { $0.id == overlay.id }) {
+            textOverlays[index] = overlay
+            if selectedTextOverlay?.id == overlay.id {
+                selectedTextOverlay = overlay
+            }
+        }
+    }
+
+    func clearTextOverlays() {
+        textOverlays.removeAll()
+        selectedTextOverlay = nil
+    }
+
+    func duplicateTextOverlay(at index: Int) {
+        guard index >= 0 && index < textOverlays.count else { return }
+        var duplicate = textOverlays[index]
+        duplicate.startTime += 1.0
+        duplicate.endTime += 1.0
+        textOverlays.append(duplicate)
+    }
+
+    enum TextOverlayPreset {
+        case title
+        case subtitle
+        case watermark
+        case custom
     }
 
     // MARK: - Helper Methods (UI Formatting)

@@ -17,9 +17,13 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 // Video player
                 if let player = viewModel.player {
-                    VideoPlayer(player: player)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black)
+                    VideoPlayerWithTextOverlay(
+                        player: player,
+                        textOverlays: viewModel.textOverlays,
+                        currentTime: viewModel.playheadPosition * viewModel.videoDurationSeconds
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black)
                 } else {
                     ZStack {
                         Color.black.opacity(0.9)
@@ -154,6 +158,11 @@ struct ContentView: View {
                                 }
                             }
                         }
+
+                        // Text Overlays Section
+                        Divider()
+
+                        TextOverlayPanel(viewModel: viewModel)
 
                         // Stats Section
                         if viewModel.hasVideo {
