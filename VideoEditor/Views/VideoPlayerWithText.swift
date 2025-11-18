@@ -102,7 +102,8 @@ struct TextOverlayPreview: View {
 
     var body: some View {
         Text(overlay.text)
-            .font(.system(size: scaledFontSize, weight: .regular, design: .default))
+            .font(.custom(overlay.fontName, size: scaledFontSize))
+            .fontWeight(overlay.fontWeight.swiftUIWeight)
             .foregroundColor(overlay.textColor)
             .multilineTextAlignment(textAlignment)
             .padding(8)

@@ -560,7 +560,18 @@ extension VideoProcessingService {
         let y = (1.0 - overlay.y) * videoSize.height // Flip Y coordinate
 
         // Create attributed string with styling
-        let font = NSFont(name: overlay.fontName, size: overlay.fontSize) ?? NSFont.systemFont(ofSize: overlay.fontSize)
+        var font = NSFont(name: overlay.fontName, size: overlay.fontSize) ?? NSFont.systemFont(ofSize: overlay.fontSize)
+
+        // Apply font weight
+        let fontDescriptor = font.fontDescriptor
+        let weightedDescriptor = fontDescriptor.addingAttributes([
+            .traits: [
+                NSFontDescriptor.TraitKey.weight: overlay.fontWeight.nsWeight
+            ]
+        ])
+        if let weightedFont = NSFont(descriptor: weightedDescriptor, size: overlay.fontSize) {
+            font = weightedFont
+        }
 
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = overlay.textAlignment.systemAlignment

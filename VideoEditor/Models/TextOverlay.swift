@@ -20,6 +20,7 @@ struct TextOverlay: Identifiable, Equatable {
     // Styling
     var fontSize: CGFloat
     var fontName: String
+    var fontWeight: FontWeight
     var textColor: Color
     var backgroundColor: Color
     var backgroundOpacity: Double
@@ -45,6 +46,46 @@ struct TextOverlay: Identifiable, Equatable {
         }
     }
 
+    enum FontWeight: String, CaseIterable {
+        case ultraLight = "Ultra Light"
+        case thin = "Thin"
+        case light = "Light"
+        case regular = "Regular"
+        case medium = "Medium"
+        case semibold = "Semibold"
+        case bold = "Bold"
+        case heavy = "Heavy"
+        case black = "Black"
+
+        var swiftUIWeight: Font.Weight {
+            switch self {
+            case .ultraLight: return .ultraLight
+            case .thin: return .thin
+            case .light: return .light
+            case .regular: return .regular
+            case .medium: return .medium
+            case .semibold: return .semibold
+            case .bold: return .bold
+            case .heavy: return .heavy
+            case .black: return .black
+            }
+        }
+
+        var nsWeight: NSFont.Weight {
+            switch self {
+            case .ultraLight: return .ultraLight
+            case .thin: return .thin
+            case .light: return .light
+            case .regular: return .regular
+            case .medium: return .medium
+            case .semibold: return .semibold
+            case .bold: return .bold
+            case .heavy: return .heavy
+            case .black: return .black
+            }
+        }
+    }
+
     init(
         text: String = "New Text",
         startTime: Double = 0.0,
@@ -53,6 +94,7 @@ struct TextOverlay: Identifiable, Equatable {
         y: Double = 0.5,
         fontSize: CGFloat = 48,
         fontName: String = "Helvetica-Bold",
+        fontWeight: FontWeight = .bold,
         textColor: Color = .white,
         backgroundColor: Color = .black,
         backgroundOpacity: Double = 0.5,
@@ -69,6 +111,7 @@ struct TextOverlay: Identifiable, Equatable {
         self.y = y
         self.fontSize = fontSize
         self.fontName = fontName
+        self.fontWeight = fontWeight
         self.textColor = textColor
         self.backgroundColor = backgroundColor
         self.backgroundOpacity = backgroundOpacity
@@ -136,10 +179,23 @@ struct TextOverlay: Identifiable, Equatable {
 
     // Auto-style: Analyze video frame and set optimal colors (no background)
     mutating func autoStyle(videoFrame: NSImage?) {
-        guard let frame = videoFrame else { return }
+        guard let frame = videoFrame else {
+            // Default: white text if no frame provided
+            textColor = .white
+            backgroundColor = .clear
+            backgroundOpacity = 0.0
+            hasShadow = false
+            shadowColor = .clear
+            shadowRadius = 0
+            opacity = 1.0
+            return
+        }
 
         // Calculate position in image coordinates
-        guard let cgImage = frame.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        guard let cgImage = frame.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            textColor = .white
+            return
+        }
 
         let width = CGFloat(cgImage.width)
         let height = CGFloat(cgImage.height)
@@ -158,101 +214,56 @@ struct TextOverlay: Identifiable, Equatable {
         )
 
         // Get average color of the sample area
-        guard let croppedImage = cgImage.cropping(to: sampleRect) else { return }
+        guard let croppedImage = cgImage.cropping(to: sampleRect) else {
+            textColor = .white
+            return
+        }
+
         let avgColor = averageColor(of: croppedImage)
 
         // Calculate brightness (0.0 = dark, 1.0 = bright)
         let brightness = avgColor.brightness
 
-        // Choose contrasting text color based on background
-        // Use complementary color for maximum contrast
-        let contrastColor = findContrastingColor(
-            red: avgColor.red,
-            green: avgColor.green,
-            blue: avgColor.blue,
-            brightness: brightness
-        )
+        // Simple logic: Start with white, switch to black only if background is very bright
+        if brightness > 0.7 {
+            // Very bright background → use black text
+            textColor = .black
+        } else {
+            // Default to white for dark/medium backgrounds
+            textColor = .white
+        }
 
-        textColor = contrastColor
+        // Use handwritten font for natural, casual look
+        // Try common handwritten fonts available on macOS
+        let handwrittenFonts = [
+            "Snell Roundhand",
+            "Bradley Hand Bold",
+            "Noteworthy-Bold",
+            "Marker Felt Wide",
+            "Comic Sans MS"
+        ]
+
+        // Find first available font, fallback to default
+        var selectedFont = "Helvetica-Bold"
+        for font in handwrittenFonts {
+            if NSFont(name: font, size: 12) != nil {
+                selectedFont = font
+                break
+            }
+        }
+
+        fontName = selectedFont
+        fontSize = 48 // Good readable size
 
         // No background by default
         backgroundColor = .clear
         backgroundOpacity = 0.0
 
-        // Always enable shadow for readability without background
-        hasShadow = true
-        shadowColor = brightness > 0.5 ? .black : .white
-        shadowRadius = 6 // Larger shadow for better readability without background
+        // No shadow - clean look
+        hasShadow = false
+        shadowColor = .clear
+        shadowRadius = 0
         opacity = 1.0 // Full opacity for text
-    }
-
-    // Find best contrasting color for text
-    private func findContrastingColor(red: Double, green: Double, blue: Double, brightness: Double) -> Color {
-        // If background is very dark or very bright, use simple white/black
-        if brightness < 0.2 {
-            return .white
-        } else if brightness > 0.8 {
-            return .black
-        }
-
-        // For medium brightness, find complementary color with high saturation
-        // Convert RGB to HSV to manipulate hue and saturation
-        let (hue, saturation, _) = rgbToHsv(r: red, g: green, b: blue)
-
-        // Use complementary hue (opposite on color wheel)
-        let complementaryHue = (hue + 0.5).truncatingRemainder(dividingBy: 1.0)
-
-        // High saturation for vibrant color, adjust value for contrast
-        let newValue = brightness > 0.5 ? 0.2 : 0.95
-
-        // Convert back to RGB
-        let (r, g, b) = hsvToRgb(h: complementaryHue, s: min(saturation * 1.5, 1.0), v: newValue)
-
-        return Color(red: r, green: g, blue: b)
-    }
-
-    // RGB to HSV conversion
-    private func rgbToHsv(r: Double, g: Double, b: Double) -> (h: Double, s: Double, v: Double) {
-        let max = Swift.max(r, g, b)
-        let min = Swift.min(r, g, b)
-        let delta = max - min
-
-        var h: Double = 0
-        let s: Double = max == 0 ? 0 : delta / max
-        let v: Double = max
-
-        if delta != 0 {
-            if max == r {
-                h = ((g - b) / delta).truncatingRemainder(dividingBy: 6.0)
-            } else if max == g {
-                h = (b - r) / delta + 2
-            } else {
-                h = (r - g) / delta + 4
-            }
-            h /= 6.0
-            if h < 0 { h += 1 }
-        }
-
-        return (h, s, v)
-    }
-
-    // HSV to RGB conversion
-    private func hsvToRgb(h: Double, s: Double, v: Double) -> (r: Double, g: Double, b: Double) {
-        let i = Int(h * 6)
-        let f = h * 6 - Double(i)
-        let p = v * (1 - s)
-        let q = v * (1 - f * s)
-        let t = v * (1 - (1 - f) * s)
-
-        switch i % 6 {
-        case 0: return (v, t, p)
-        case 1: return (q, v, p)
-        case 2: return (p, v, t)
-        case 3: return (p, q, v)
-        case 4: return (t, p, v)
-        case 5: return (v, p, q)
-        default: return (v, t, p)
-        }
     }
 
     // Calculate average color of a CGImage

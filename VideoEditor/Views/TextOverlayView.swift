@@ -399,6 +399,17 @@ struct TextOverlayEditor: View {
 
                         HStack(spacing: 16) {
                             VStack(alignment: .leading) {
+                                Text("Font")
+                                    .font(.caption)
+                                Picker("", selection: $overlay.fontName) {
+                                    ForEach(availableFonts, id: \.self) { font in
+                                        Text(font).tag(font)
+                                    }
+                                }
+                                .frame(width: 200)
+                            }
+
+                            VStack(alignment: .leading) {
                                 Text("Font Size")
                                     .font(.caption)
                                 Slider(value: $overlay.fontSize, in: 12...120)
@@ -407,6 +418,19 @@ struct TextOverlayEditor: View {
                                     .foregroundColor(.secondary)
                             }
 
+                            VStack(alignment: .leading) {
+                                Text("Font Weight")
+                                    .font(.caption)
+                                Picker("", selection: $overlay.fontWeight) {
+                                    ForEach(TextOverlay.FontWeight.allCases, id: \.self) { weight in
+                                        Text(weight.rawValue).tag(weight)
+                                    }
+                                }
+                                .frame(width: 120)
+                            }
+                        }
+
+                        HStack(spacing: 16) {
                             VStack(alignment: .leading) {
                                 Text("Opacity")
                                     .font(.caption)
@@ -468,7 +492,8 @@ struct TextOverlayEditor: View {
                                 .frame(height: 150)
 
                             Text(overlay.text)
-                                .font(.system(size: overlay.fontSize / 3))
+                                .font(.custom(overlay.fontName, size: overlay.fontSize / 3))
+                                .fontWeight(overlay.fontWeight.swiftUIWeight)
                                 .foregroundColor(overlay.textColor)
                                 .opacity(overlay.opacity)
                                 .padding(8)
@@ -501,7 +526,84 @@ struct TextOverlayEditor: View {
 
     private func loadAvailableFonts() {
         let fontManager = NSFontManager.shared
-        availableFonts = fontManager.availableFonts.sorted()
+        let allFonts = fontManager.availableFonts
+
+        // Handwritten/Casual fonts (prioritized)
+        let handwrittenFonts = [
+            "Snell Roundhand",
+            "Bradley Hand Bold",
+            "Noteworthy-Bold",
+            "Marker Felt Wide",
+            "Comic Sans MS"
+        ]
+
+        // Common readable fonts
+        let commonFonts = [
+            "Helvetica",
+            "Helvetica-Bold",
+            "Arial",
+            "Arial-BoldMT",
+            "Times New Roman",
+            "Times-Bold",
+            "Courier",
+            "Courier-Bold",
+            "Georgia",
+            "Georgia-Bold",
+            "Verdana",
+            "Verdana-Bold",
+            "Impact",
+            "Futura-Medium",
+            "Futura-Bold",
+            "Avenir-Medium",
+            "Avenir-Heavy",
+            "Baskerville",
+            "Baskerville-Bold"
+        ]
+
+        var filteredFonts: [String] = []
+
+        // Add handwritten fonts first (if available)
+        for font in handwrittenFonts {
+            if allFonts.contains(font) || NSFont(name: font, size: 12) != nil {
+                filteredFonts.append(font)
+            }
+        }
+
+        // Add common fonts
+        for font in commonFonts {
+            if allFonts.contains(font) || NSFont(name: font, size: 12) != nil {
+                filteredFonts.append(font)
+            }
+        }
+
+        // Add any other popular fonts that might be available
+        let popularFonts = allFonts.filter { font in
+            let lowercased = font.lowercased()
+            return (lowercased.contains("bold") ||
+                    lowercased.contains("medium") ||
+                    lowercased.contains("regular")) &&
+                   !lowercased.contains("oblique") &&
+                   !lowercased.contains("italic") &&
+                   !lowercased.contains("condensed") &&
+                   !lowercased.contains("light") &&
+                   !lowercased.contains("thin") &&
+                   !filteredFonts.contains(font)
+        }
+
+        // Add up to 20 more popular fonts
+        filteredFonts.append(contentsOf: popularFonts.prefix(20))
+
+        // Remove duplicates and sort (keeping handwritten at top)
+        let handwrittenCount = filteredFonts.filter { handwrittenFonts.contains($0) }.count
+        let handwritten = Array(filteredFonts.prefix(handwrittenCount))
+        let rest = Array(filteredFonts.dropFirst(handwrittenCount)).sorted()
+
+        availableFonts = handwritten + rest
+
+        // Fallback to all fonts if we have less than 10
+        if availableFonts.count < 10 {
+            availableFonts = allFonts.sorted()
+        }
     }
 }
 
