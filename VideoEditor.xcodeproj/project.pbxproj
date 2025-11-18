@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,7 +17,26 @@
 		AA9999910000000000000001 /* VideoProcessingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9999920000000000000001 /* VideoProcessingService.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		51F53E7C2ECCB7B5002225D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000200000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000160000000000000001;
+			remoteInfo = VideoEditor;
+		};
+		51F53E8D2ECCB81A002225D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000200000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000160000000000000001;
+			remoteInfo = VideoEditor;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		51F53E762ECCB7B5002225D3 /* VideoEditorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoEditorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		51F53E872ECCB81A002225D3 /* VideoEditorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoEditorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000020000000000000001 /* VideoEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorApp.swift; sourceTree = "<group>"; };
 		AA0000040000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA0000060000000000000001 /* VideoEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorViewModel.swift; sourceTree = "<group>"; };
@@ -31,7 +50,26 @@
 		AA9999920000000000000001 /* VideoProcessingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProcessingService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		51F53E772ECCB7B5002225D3 /* VideoEditorTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = VideoEditorTests; sourceTree = "<group>"; };
+		51F53E882ECCB81A002225D3 /* VideoEditorUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = VideoEditorUITests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		51F53E732ECCB7B5002225D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		51F53E842ECCB81A002225D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000120000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +84,8 @@
 			isa = PBXGroup;
 			children = (
 				AA0000140000000000000001 /* VideoEditor */,
+				51F53E772ECCB7B5002225D3 /* VideoEditorTests */,
+				51F53E882ECCB81A002225D3 /* VideoEditorUITests */,
 				AA0000150000000000000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -63,6 +103,16 @@
 				AA0000110000000000000001 /* Info.plist */,
 			);
 			path = VideoEditor;
+			sourceTree = "<group>";
+		};
+		AA0000150000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000090000000000000001 /* VideoEditor.app */,
+				51F53E762ECCB7B5002225D3 /* VideoEditorTests.xctest */,
+				51F53E872ECCB81A002225D3 /* VideoEditorUITests.xctest */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		AA4444440000000000000001 /* App */ = {
@@ -107,17 +157,55 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-		AA0000150000000000000001 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				AA0000090000000000000001 /* VideoEditor.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		51F53E752ECCB7B5002225D3 /* VideoEditorTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51F53E802ECCB7B5002225D3 /* Build configuration list for PBXNativeTarget "VideoEditorTests" */;
+			buildPhases = (
+				51F53E722ECCB7B5002225D3 /* Sources */,
+				51F53E732ECCB7B5002225D3 /* Frameworks */,
+				51F53E742ECCB7B5002225D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				51F53E7D2ECCB7B5002225D3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				51F53E772ECCB7B5002225D3 /* VideoEditorTests */,
+			);
+			name = VideoEditorTests;
+			packageProductDependencies = (
+			);
+			productName = VideoEditorTests;
+			productReference = 51F53E762ECCB7B5002225D3 /* VideoEditorTests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		51F53E862ECCB81A002225D3 /* VideoEditorUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51F53E8F2ECCB81A002225D3 /* Build configuration list for PBXNativeTarget "VideoEditorUITests" */;
+			buildPhases = (
+				51F53E832ECCB81A002225D3 /* Sources */,
+				51F53E842ECCB81A002225D3 /* Frameworks */,
+				51F53E852ECCB81A002225D3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				51F53E8E2ECCB81A002225D3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				51F53E882ECCB81A002225D3 /* VideoEditorUITests */,
+			);
+			name = VideoEditorUITests;
+			packageProductDependencies = (
+			);
+			productName = VideoEditorUITests;
+			productReference = 51F53E872ECCB81A002225D3 /* VideoEditorUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		AA0000160000000000000001 /* VideoEditor */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AA0000170000000000000001 /* Build configuration list for PBXNativeTarget "VideoEditor" */;
@@ -142,9 +230,17 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
+					51F53E752ECCB7B5002225D3 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = AA0000160000000000000001;
+					};
+					51F53E862ECCB81A002225D3 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = AA0000160000000000000001;
+					};
 					AA0000160000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -164,11 +260,27 @@
 			projectRoot = "";
 			targets = (
 				AA0000160000000000000001 /* VideoEditor */,
+				51F53E752ECCB7B5002225D3 /* VideoEditorTests */,
+				51F53E862ECCB81A002225D3 /* VideoEditorUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		51F53E742ECCB7B5002225D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		51F53E852ECCB81A002225D3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000190000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -180,6 +292,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		51F53E722ECCB7B5002225D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		51F53E832ECCB81A002225D3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000180000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -196,7 +322,96 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		51F53E7D2ECCB7B5002225D3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000160000000000000001 /* VideoEditor */;
+			targetProxy = 51F53E7C2ECCB7B5002225D3 /* PBXContainerItemProxy */;
+		};
+		51F53E8E2ECCB81A002225D3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000160000000000000001 /* VideoEditor */;
+			targetProxy = 51F53E8D2ECCB81A002225D3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		51F53E7E2ECCB7B5002225D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yelizkececi.VideoEditorTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VideoEditor;
+			};
+			name = Debug;
+		};
+		51F53E7F2ECCB7B5002225D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yelizkececi.VideoEditorTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VideoEditor;
+			};
+			name = Release;
+		};
+		51F53E902ECCB81A002225D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yelizkececi.VideoEditorUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VideoEditor;
+			};
+			name = Debug;
+		};
+		51F53E912ECCB81A002225D3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yelizkececi.VideoEditorUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = VideoEditor;
+			};
+			name = Release;
+		};
 		AA0000220000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -376,6 +591,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		51F53E802ECCB7B5002225D3 /* Build configuration list for PBXNativeTarget "VideoEditorTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51F53E7E2ECCB7B5002225D3 /* Debug */,
+				51F53E7F2ECCB7B5002225D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		51F53E8F2ECCB81A002225D3 /* Build configuration list for PBXNativeTarget "VideoEditorUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51F53E902ECCB81A002225D3 /* Debug */,
+				51F53E912ECCB81A002225D3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AA0000170000000000000001 /* Build configuration list for PBXNativeTarget "VideoEditor" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
