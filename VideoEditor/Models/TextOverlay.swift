@@ -316,18 +316,25 @@ struct TextOverlay: Identifiable, Equatable {
 
     // Auto-position: Find optimal placement avoiding other overlays
     mutating func autoPosition(existingOverlays: [TextOverlay]) {
-        // Define safe zones (areas that work well for text)
-        let safePositions: [(x: Double, y: Double, name: String)] = [
-            (0.5, 0.15, "Top Center"),       // Title position
-            (0.5, 0.85, "Bottom Center"),    // Subtitle position
-            (0.5, 0.5, "Center"),            // Dead center
-            (0.15, 0.15, "Top Left"),        // Upper left
-            (0.85, 0.15, "Top Right"),       // Upper right
-            (0.15, 0.85, "Bottom Left"),     // Lower left
-            (0.85, 0.85, "Bottom Right"),    // Lower right
-            (0.5, 0.3, "Upper Center"),      // Upper-mid
-            (0.5, 0.7, "Lower Center"),      // Lower-mid
-        ]
+        // Generate many position candidates across the video
+        var safePositions: [(x: Double, y: Double, name: String)] = []
+
+        // Create a grid of positions (5x5 grid = 25 positions)
+        let xPositions: [Double] = [0.15, 0.3, 0.5, 0.7, 0.85]
+        let yPositions: [Double] = [0.15, 0.3, 0.5, 0.7, 0.85]
+
+        for x in xPositions {
+            for y in yPositions {
+                // Skip center position as requested
+                if x == 0.5 && y == 0.5 {
+                    continue
+                }
+
+                let xDesc = x < 0.25 ? "Left" : x > 0.75 ? "Right" : "Mid"
+                let yDesc = y < 0.25 ? "Top" : y > 0.75 ? "Bottom" : "Middle"
+                safePositions.append((x, y, "\(yDesc) \(xDesc)"))
+            }
+        }
 
         // Filter overlays that overlap in time
         let overlappingOverlays = existingOverlays.filter { overlay in
@@ -341,7 +348,7 @@ struct TextOverlay: Identifiable, Equatable {
         }
 
         // Score each position based on distance from existing overlays
-        var bestPosition = (x: 0.5, y: 0.5, score: 0.0, name: "Center")
+        var scoredPositions: [(x: Double, y: Double, score: Double, name: String)] = []
 
         for position in safePositions {
             var score = 1.0 // Start with full score
@@ -358,19 +365,25 @@ struct TextOverlay: Identifiable, Equatable {
                 }
             }
 
-            // Prefer certain positions (center positions are generally better)
-            if position.name.contains("Center") {
-                score += 0.1
-            }
-
-            if score > bestPosition.score {
-                bestPosition = (position.x, position.y, score, position.name)
-            }
+            scoredPositions.append((position.x, position.y, score, position.name))
         }
 
-        // Apply the best position
-        self.x = bestPosition.x
-        self.y = bestPosition.y
+        // Sort by score (best positions are those furthest from other overlays)
+        scoredPositions.sort { $0.score > $1.score }
+
+        // Filter to only positions with acceptable scores (not too close to others)
+        let goodPositions = scoredPositions.filter { $0.score > 0.5 }
+
+        // Pick randomly from good positions, or all positions if none are good
+        let candidatePositions = goodPositions.isEmpty ? scoredPositions : goodPositions
+        if let selectedPosition = candidatePositions.randomElement() {
+            self.x = selectedPosition.x
+            self.y = selectedPosition.y
+        } else {
+            // Fallback to random position if no positions available
+            self.x = Double.random(in: 0.15...0.85)
+            self.y = Double.random(in: 0.15...0.85)
+        }
     }
 }
 
